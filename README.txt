@@ -1,5 +1,5 @@
 
-This is the WORKING project for XOPPY (XOP under python3+orange3)
+This is the WORKING project for WISE
 
 THIS VERSION IS UNDER DEVELOPMENT AND IS HIGLY INSTABLE:
 

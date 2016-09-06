@@ -5,8 +5,8 @@ import os
 from setuptools import find_packages, setup
 
 NAME = 'OASYS-WISE'
-VERSION = '1.0.0'
-ISRELEASED = False
+VERSION = '1.0.4'
+ISRELEASED = True
 
 DESCRIPTION = 'WISE in Python'
 README_FILE = os.path.join(os.path.dirname(__file__), 'README.txt')
@@ -56,11 +56,10 @@ PACKAGE_DATA = {
 NAMESPACE_PACAKGES = ["orangecontrib", "orangecontrib.wise", "orangecontrib.wise.widgets"]
 
 ENTRY_POINTS = {
-    'wise.addons' : ("wise = orangecontrib.wise", ),
-    'wise.widgets' : (
+    'oasys.addons' : ("wise = orangecontrib.wise", ),
+    'oasys.widgets' : (
         "WISE = orangecontrib.wise.widgets.wise",
     ),
-    #'wise.menus' : ("xoppymenu = orangecontrib.xoppy.menu",)
 }
 
 if __name__ == '__main__':

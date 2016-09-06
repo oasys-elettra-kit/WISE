@@ -1,16 +1,6 @@
 import numpy
 from collections import OrderedDict
 
-class WiseOutput(object):
-    source = None
-    optical_element = None
-    wavefront = None
-
-    def __init__(self, source = WiseSource(), optical_element = WiseOpticalElement(), wavefront = Wavefront()):
-        self.source = source
-        self.optical_element = optical_element
-        self.wavefront = wavefront
-
 class Wavefront(object):
     electric_fields = None
     positions = None
@@ -48,4 +38,13 @@ class WiseOpticalElement(object):
     
     def get_property(self, key):
         return self.properties[key]
-    
+
+class WiseOutput(object):
+    source = None
+    optical_element = None
+    wavefront = None
+
+    def __init__(self, source=None, optical_element=None, wavefront=None):
+        self.source = source
+        self.optical_element = optical_element
+        self.wavefront = wavefront

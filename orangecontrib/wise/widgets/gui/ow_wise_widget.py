@@ -56,8 +56,8 @@ class WiseWidget(widget.OWWidget):
 
         box0 = gui.widgetBox(self.controlArea, "", orientation="horizontal")
         #widget buttons: compute, set defaults, help
-        gui.button(box0, self, "Compute", callback=self.compute)
-        gui.button(box0, self, "Defaults", callback=self.defaults)
+        gui.button(box0, self, "Compute", callback=self.compute, height=35)
+        gui.button(box0, self, "Defaults", callback=self.defaults, height=35)
 
         gui.separator(self.controlArea, height=10)
 
@@ -162,8 +162,8 @@ class WiseWidget(widget.OWWidget):
                     log_x, log_y = self.getLogPlot()[index]
 
                     try:
-                        self.plot_histo(plot_data[:, x_index],
-                                        plot_data[:, y_index],
+                        self.plot_histo(plot_data[x_index, :],
+                                        plot_data[y_index, :],
                                         progressBarValue + ((index+1)*progress_bar_step),
                                         tabs_canvas_index=index,
                                         plot_canvas_index=index,
@@ -240,7 +240,7 @@ class WiseWidget(widget.OWWidget):
 
             self.setStatusMessage("Error!")
 
-            #raise exception
+            raise exception
 
         self.progressBarFinished()
 
