@@ -44,7 +44,7 @@ INSTALL_REQUIRES = (
     'srxraylib>=0.0.9',
     'orange-widget-core>=0.0.2',
     'oasys>=0.1.17',
-    'wiselib'
+    'wiselib',
 )
 
 PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
@@ -62,8 +62,6 @@ ENTRY_POINTS = {
     ),
     #'wise.menus' : ("xoppymenu = orangecontrib.xoppy.menu",)
 }
-
-import site, shutil, sys
 
 if __name__ == '__main__':
     setup(
