@@ -1,0 +1,7 @@
+
+This is the WORKING project for XOPPY (XOP under python3+orange3)
+
+THIS VERSION IS UNDER DEVELOPMENT AND IS HIGLY INSTABLE:
+
+             INSTALLATION IS NOT RECOMENDED!!!!
+
