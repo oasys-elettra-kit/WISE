@@ -5,7 +5,7 @@ import os
 from setuptools import find_packages, setup
 
 NAME = 'OASYS-WISE'
-VERSION = '1.0.4'
+VERSION = '1.0.5'
 ISRELEASED = True
 
 DESCRIPTION = 'WISE in Python'
@@ -43,7 +43,7 @@ INSTALL_REQUIRES = (
     'matplotlib==1.4.3',
     'srxraylib>=0.0.9',
     'orange-widget-core>=0.0.2',
-    'oasys>=0.1.17',
+    'oasys>=0.1.18',
     'wiselib',
 )
 
@@ -51,6 +51,7 @@ PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
 
 PACKAGE_DATA = {
     "orangecontrib.wise.widgets.wise":["icons/*.png", "icons/*.jpg"],
+    "orangecontrib.wise.widgets.tools":["icons/*.png", "icons/*.jpg"],
 }
 
 NAMESPACE_PACAKGES = ["orangecontrib", "orangecontrib.wise", "orangecontrib.wise.widgets"]
@@ -59,6 +60,7 @@ ENTRY_POINTS = {
     'oasys.addons' : ("wise = orangecontrib.wise", ),
     'oasys.widgets' : (
         "WISE = orangecontrib.wise.widgets.wise",
+        "WISE Tools = orangecontrib.wise.widgets.tools",
     ),
 }
 

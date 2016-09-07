@@ -1,5 +1,4 @@
 import sys
-import numpy
 from PyMca5.PyMcaGui.plotting.PlotWindow import PlotWindow
 
 from PyQt4 import QtGui
@@ -54,10 +53,10 @@ class WiseWidget(widget.OWWidget):
 
         self.controlArea.setFixedWidth(self.CONTROL_AREA_WIDTH)
 
-        box0 = gui.widgetBox(self.controlArea, "", orientation="horizontal")
+        self.button_box = gui.widgetBox(self.controlArea, "", orientation="horizontal")
         #widget buttons: compute, set defaults, help
-        gui.button(box0, self, "Compute", callback=self.compute, height=35)
-        gui.button(box0, self, "Defaults", callback=self.defaults, height=35)
+        gui.button(self.button_box, self, "Compute", callback=self.compute, height=35)
+        gui.button(self.button_box, self, "Defaults", callback=self.defaults, height=35)
 
         gui.separator(self.controlArea, height=10)
 
@@ -69,8 +68,8 @@ class WiseWidget(widget.OWWidget):
         plot_tab = gui.createTabPage(self.main_tabs, "Results")
         out_tab = gui.createTabPage(self.main_tabs, "Output")
 
-        view_box = oasysgui.widgetBox(plot_tab, "Results Options", addSpace=False, orientation="horizontal")
-        view_box_1 = oasysgui.widgetBox(view_box, "", addSpace=False, orientation="vertical", width=350)
+        self.view_box = oasysgui.widgetBox(plot_tab, "Results Options", addSpace=False, orientation="horizontal")
+        view_box_1 = oasysgui.widgetBox(self.view_box, "", addSpace=False, orientation="vertical", width=350)
 
         self.view_type_combo = gui.comboBox(view_box_1, self, "view_type", label="View Results",
                                             labelWidth=220,
@@ -232,7 +231,8 @@ class WiseWidget(widget.OWWidget):
 
                 self.setStatusMessage("")
 
-                self.send("wise_output", self.extract_wise_output_from_calculation_output(calculation_output))
+                wise_output = self.extract_wise_output_from_calculation_output(calculation_output)
+                if not wise_output is None: self.send("wise_output", wise_output)
 
         except Exception as exception:
             QtGui.QMessageBox.critical(self, "Error",

@@ -20,10 +20,8 @@ class OWGaussianSource1d(WiseWidget):
     category = ""
     keywords = ["wise", "gaussian"]
 
-
-    source_lambda = Setting(1e-9)
+    source_lambda = Setting(10e-9)
     source_sigma =  Setting(125e-6)
-
     source_position = Setting(0)
 
     z_origin = Setting(0.0)
@@ -59,6 +57,7 @@ class OWGaussianSource1d(WiseWidget):
     def check_fields(self):
         self.source_lambda = congruence.checkStrictlyPositiveNumber(self.source_lambda, "Wavelength")
         self.source_sigma = congruence.checkStrictlyPositiveNumber(self.source_sigma, "Sigma")
+        self.theta = congruence.checkAngle(self.theta, "Theta")
 
     def do_wise_calculation(self):
         if self.source_position == 1:
