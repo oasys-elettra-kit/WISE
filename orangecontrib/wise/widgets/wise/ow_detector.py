@@ -206,10 +206,10 @@ class OWDetector(WiseWidget):
                 elliptic_mirror = self.input_data.get_optical_element().inner_wise_optical_element
                 detector_size = self.input_data.get_optical_element().get_property("detector_size")
 
-                defocus_list = numpy.arange(self.defocus_start * self.workspace_units_to_m,
+                self.defocus_list = numpy.arange(self.defocus_start * self.workspace_units_to_m,
                                             self.defocus_stop * self.workspace_units_to_m,
                                             self.defocus_step * self.workspace_units_to_m)
-                n_defocus = len(defocus_list)
+                n_defocus = len(self.defocus_list)
 
                 progress_bar_increment = 100/n_defocus
 
@@ -234,7 +234,7 @@ class OWDetector(WiseWidget):
 
                 if self.show_animation == 1: time.sleep(0.5)
 
-                for i, defocus in enumerate(defocus_list):
+                for i, defocus in enumerate(self.defocus_list):
                     if numpy.abs(defocus) < 1e-15: defocus = 0.0
 
                     propagation_parameter.defocus_sweep = defocus
@@ -275,16 +275,16 @@ class OWDetector(WiseWidget):
                 if self.show_animation == 1:
                     QMessageBox.information(self,
                                             "Best Focus Calculation",
-                                            "Best Focus Found!\n\nPosition: " + str(self.oe_f2 + (defocus_list[index_min]/self.workspace_units_to_m)) + "\nHEW: " + str(round(self.hews_list[index_min], 5)),
+                                            "Best Focus Found!\n\nPosition: " + str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) + "\nHEW: " + str(round(self.hews_list[index_min], 5)),
                                             QMessageBox.Ok
                                             )
 
                 self.plot_histo(best_focus_positions * 1e6,
                                 Amp(best_focus_electric_fields) ** 2,
-                                80,
+                                100,
                                 tabs_canvas_index=1,
                                 plot_canvas_index=1,
-                                title="Intensity at Best Focus Position: " + str(self.oe_f2 + (defocus_list[index_min]/self.workspace_units_to_m)) + ", HEW: " + str(round(self.hews_list[index_min], 5)),
+                                title="Intensity at Best Focus Position: " + str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) + ", HEW: " + str(round(self.hews_list[index_min], 5)),
                                 xtitle="Z [$\mu$m]",
                                 ytitle="Intensity",
                                 log_x=False,
@@ -311,27 +311,32 @@ class OWDetector(WiseWidget):
 
             if not path_dir is None:
                 if not path_dir.strip() == "":
-                    for index in range(0, len(self.electric_fields_list)):
-                        file_name = "best_focus_partial_result_" + str(index) + ".dat"
+                    if QMessageBox.question(self,
+                                            "Save Data",
+                                            "Data will be saved in :\n\n" + path_dir + "\n\nConfirm?",
+                                            QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+                        for index in range(0, len(self.electric_fields_list)):
+                            file_name = "best_focus_partial_result_" + str(index) + ".dat"
 
-                        file = open(path_dir + "/" + file_name, "w")
+                            file = open(path_dir + "/" + file_name, "w")
 
-                        intensities = Amp(self.electric_fields_list[index]) ** 2
+                            intensities = Amp(self.electric_fields_list[index]) ** 2
 
-                        file.write("# HEW: " + str(self.hews_list[index]) + "\n")
-                        file.write("# Position [um]  Intensity\n")
+                            file.write("# Defocus Sweep: " + str(self.defocus_list[index]) + " [m] \n")
+                            file.write("# HEW          : " + str(self.hews_list[index]) + "\n")
+                            file.write("# Position [m]  Intensity\n")
 
-                        for i in range (0, len(self.positions_list[index])):
-                            file.write(str(self.positions_list[index][i]) + " " + str(intensities[i]) + "\n")
+                            for i in range (0, len(self.positions_list[index])):
+                                file.write(str(self.positions_list[index][i]) + " " + str(intensities[i]) + "\n")
 
 
-                        file.close()
+                            file.close()
 
-                    QMessageBox.information(self,
-                                            "Best Focus Calculation",
-                                            "Best Focus Calculation complete results saved on directory:\n" + path_dir,
-                                            QMessageBox.Ok
-                                            )
+                        QMessageBox.information(self,
+                                                "Best Focus Calculation",
+                                                "Best Focus Calculation complete results saved on directory:\n\n" + path_dir,
+                                                QMessageBox.Ok
+                                                )
 
         except Exception as exception:
             QMessageBox.critical(self, "Error", str(exception), QMessageBox.Ok)
