@@ -37,32 +37,28 @@ class WiseOpticalElement(object):
 
 class WiseOutput(object):
     _source = None
-    _optical_elements = []
+    _optical_element = None
     _wavefront = None
 
     def __init__(self, source=None, optical_element=None, wavefront=None):
         self._source = source
+        self._optical_element = optical_element
         self._wavefront = wavefront
-        if not optical_element is None:
-            self._optical_elements.append(optical_element)
+
+    def has_source(self):
+        return not self._source is None
 
     def get_source(self):
         return self._source
 
-    def has_optical_elements(self):
-        return len(self._optical_elements) > 0
+    def has_optical_element(self):
+        return not self._optical_element is None
 
-    def get_number_of_optical_elements(self):
-        return len(self._optical_elements)
+    def get_optical_element(self):
+        return self._optical_element
 
-    def get_optical_element(self, index):
-        return self._optical_elements[index]
-
-    def get_last_optical_element(self):
-        if self.has_optical_elements():
-            return self._optical_elements[-1]
-
-        return None
+    def has_wavefront(self):
+        return not self._wavefront is None
 
     def get_wavefront(self):
         return self._wavefront

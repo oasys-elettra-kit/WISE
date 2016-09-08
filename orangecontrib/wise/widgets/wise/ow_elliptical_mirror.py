@@ -1,6 +1,6 @@
 import sys
 import numpy
-from PyQt4.QtGui import QApplication
+from PyQt4.QtGui import QApplication, QMessageBox
 from orangewidget import gui
 from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui
@@ -8,9 +8,9 @@ from oasys.widgets import congruence
 
 from orangecontrib.wise.util.wise_objects import WiseOpticalElement, Wavefront, WiseOutput, WisePreInputData
 from orangecontrib.wise.widgets.gui.ow_wise_widget import WiseWidget
+from orangecontrib.wise.util.wise_propagator import WisePropagatorsChain, WisePropagationAlgorithms, WisePropagationParameters
 
 from wiselib import Optics
-import wiselib.Rayman5 as Rayman
 from  wiselib.Rayman5 import Amp, Cyc
 
 SOURCE = 0
@@ -42,13 +42,19 @@ class OWEllipticalMirror(WiseWidget):
     roughness_fit_data = Setting(0)
     detector_size = Setting(50)
 
-    def set_input(self, input_data):
-        self.input_data = input_data
+    input_data = None
 
-        if self.input_data.has_optical_elements():
-            self.previous_type = OE
-        else:
-           self.previous_type = SOURCE
+    def set_input(self, input_data):
+        self.setStatusMessage("")
+
+        if not input_data is None:
+            if input_data.has_optical_element():
+                QMessageBox.critical(self, "Error", "Propagation from previous O.E. not yet supported", QMessageBox.Ok)
+
+                self.setStatusMessage("Error!")
+
+            self.input_data = input_data
+
 
     def set_pre_input(self, data):
         if data is not None:
@@ -72,10 +78,10 @@ class OWEllipticalMirror(WiseWidget):
 
         main_box = oasysgui.widgetBox(self.controlArea, "Elliptical Mirror Input Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
 
-        oasysgui.lineEdit(main_box, self, "f1", "F1 [m]", labelWidth=260, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(main_box, self, "f2", "F2 [m]", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_f1 = oasysgui.lineEdit(main_box, self, "f1", "F1", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_f2 = oasysgui.lineEdit(main_box, self, "f2", "F2", labelWidth=260, valueType=float, orientation="horizontal")
         oasysgui.lineEdit(main_box, self, "alpha", "Incidence Angle [deg]", labelWidth=260, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(main_box, self, "length", "Length [m]", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_length = oasysgui.lineEdit(main_box, self, "length", "Length", labelWidth=260, valueType=float, orientation="horizontal")
 
         gui.separator(main_box, height=5)
 
@@ -91,8 +97,8 @@ class OWEllipticalMirror(WiseWidget):
         self.le_figure_error_file = oasysgui.lineEdit(file_box, self, "figure_error_file", "File Name", labelWidth=100, valueType=str, orientation="horizontal")
         gui.button(file_box, self, "...", callback=self.selectFigureErrorFile)
 
-        oasysgui.lineEdit(self.use_figure_error_box, self, "figure_error_step", "Step [m]", labelWidth=260, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(self.use_figure_error_box, self, "figure_error_um_conversion", "user u.m. to [m] factor", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_figure_error_step = oasysgui.lineEdit(self.use_figure_error_box, self, "figure_error_step", "Step", labelWidth=260, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(self.use_figure_error_box, self, "figure_error_um_conversion", "user file u.m. to [m] factor", labelWidth=260, valueType=float, orientation="horizontal")
 
         self.set_UseFigureError()
 
@@ -107,8 +113,8 @@ class OWEllipticalMirror(WiseWidget):
         self.le_roughness_file = oasysgui.lineEdit(file_box, self, "roughness_file", "File Name", labelWidth=100, valueType=str, orientation="horizontal")
         gui.button(file_box, self, "...", callback=self.selectroughnessFile)
 
-        oasysgui.lineEdit(self.use_roughness_box, self, "roughness_x_scaling", "x user u.m. to [m]   factor", labelWidth=260, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(self.use_roughness_box, self, "roughness_y_scaling", "y user u.m. to [m^3] factor", labelWidth=260, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(self.use_roughness_box, self, "roughness_x_scaling", "x user file u.m. to [m]   factor", labelWidth=260, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(self.use_roughness_box, self, "roughness_y_scaling", "y user file u.m. to [m^3] factor", labelWidth=260, valueType=float, orientation="horizontal")
 
         gui.comboBox(self.use_roughness_box, self, "roughness_fit_data", label="Fit numeric data with power law",
                      items=["No", "Yes"], labelWidth=260, sendSelectedValue=False, orientation="horizontal")
@@ -117,7 +123,7 @@ class OWEllipticalMirror(WiseWidget):
 
         detector_box = oasysgui.widgetBox(self.controlArea, "Detector Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
 
-        oasysgui.lineEdit(detector_box, self, "detector_size", "detector_size [" + u"\u03BC" + "m]", labelWidth=260, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(detector_box, self, "detector_size", "Detector Size [" + u"\u03BC" + "m]", labelWidth=260, valueType=float, orientation="horizontal")
 
     def selectFigureErrorFile(self):
         self.le_figure_error_file.setText(oasysgui.selectFileFromDialog(self, self.figure_error_file, "Select File", file_extension_filter="Data Files (*.dat *.txt)"))
@@ -133,6 +139,16 @@ class OWEllipticalMirror(WiseWidget):
         self.use_roughness_box.setVisible(self.use_roughness == 1)
         self.use_roughness_box_empty.setVisible(self.use_roughness == 0)
 
+    def after_change_workspace_units(self):
+        label = self.le_f1.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_f2.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_length.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_figure_error_step.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+
     def check_fields(self):
         self.f1 = congruence.checkStrictlyPositiveNumber(self.f1, "F1")
         self.f2 = congruence.checkStrictlyPositiveNumber(self.f2, "F2")
@@ -146,24 +162,22 @@ class OWEllipticalMirror(WiseWidget):
             congruence.checkFileName(self.roughness_file)
 
     def do_wise_calculation(self):
-        if self.previous_type == OE:
-            raise Exception("Propagation from previous O.E. not yet supported")
-        elif self.previous_type == SOURCE:
-            elliptic_mirror = Optics.Ellipse(f1 = self.f1,
-                                             f2 = self.f2,
-                                             Alpha = self.alpha*numpy.pi/180,
-                                             L = self.length)
+        if not self.input_data is None:
+            elliptic_mirror = Optics.Ellipse(f1 = self.f1 * self.workspace_units_to_m,
+                                             f2 = self.f2 * self.workspace_units_to_m,
+                                             Alpha = numpy.radians(self.alpha),
+                                             L = self.length * self.workspace_units_to_m)
 
             if self.use_figure_error == 1:
                 elliptic_mirror.FigureErrorAdd(numpy.loadtxt(self.figure_error_file) * self.figure_error_um_conversion,
-                                               self.figure_error_step) # (m)
+                                               self.figure_error_step * self.workspace_units_to_m) # (m)
 
 
 
             if self.use_roughness == 1:
                 elliptic_mirror.Roughness.NumericPsdLoadXY(self.roughness_file,
-                                                           xScaling = self.roughness_x_scaling,
-                                                           yScaling = self.roughness_y_scaling,
+                                                           xScaling = self.roughness_x_scaling * self.workspace_units_to_m,
+                                                           yScaling = self.roughness_y_scaling * self.workspace_units_to_m,
                                                            xIsSpatialFreq = False)
                 elliptic_mirror.Roughness.Options.FIT_NUMERIC_DATA_WITH_POWER_LAW = (self.roughness_fit_data == 1)
                 elliptic_mirror.Options.USE_ROUGHNESS = True
@@ -182,41 +196,26 @@ class OWEllipticalMirror(WiseWidget):
                                                                          Theta = elliptic_mirror.p1_Angle)
 
 
-            # Auto Sampling (easy way)
-            # Info da: Fascio(Lambda), piano kb e piano detector
-            theta_0 = elliptic_mirror.pTan_Angle
-            theta_1 = numpy.arctan(-1/elliptic_mirror.p2[0])
-            det_size = self.detector_size*1e-6
-            n_auto = Rayman.SamplingCalculator(wise_source.inner_wise_source.Lambda,
-                                               elliptic_mirror.f2,
-                                               elliptic_mirror.L,
-                                               det_size,
-                                               theta_0,
-                                               theta_1)
+
+            propagation_parameter = WisePropagationParameters(source=wise_source.inner_wise_source,
+                                                              optical_element=elliptic_mirror,
+                                                              detector_size=self.detector_size*1e-6)
 
 
-            # Piano specchio (Sorgente=>Specchio)
-            mir_x, mir_y = elliptic_mirror.GetXY_MeasuredMirror(n_auto, 0)
-            mir_E = wise_source.inner_wise_source.EvalField_XYLab(mir_x, mir_y)
-            mir_s = Rayman.xy_to_s(mir_x, mir_y)
+            propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
+                                                                                WisePropagationAlgorithms.HuygensIntegral)
 
-            # wave front at F2
-            det_x, det_y = elliptic_mirror.GetXY_TransversePlaneAtF2(det_size, n_auto, 0.0)
-            det_s = Rayman.xy_to_s(det_x, det_y)
 
-            electric_fields = Rayman.HuygensIntegral_1d_MultiPool(wise_source.inner_wise_source.Lambda,
-                                                                  mir_E,
-                                                                  mir_x,
-                                                                  mir_y,
-                                                                  det_x,
-                                                                  det_y,
-                                                                  0)
+            mir_E = propagation_output.mir_E
+            mir_s = propagation_output.mir_s
+            det_s = propagation_output.det_s
+            electric_fields = propagation_output.electric_fields
 
             wise_optical_element = WiseOpticalElement(inner_wise_optical_element=elliptic_mirror)
-            wise_optical_element.set_property("detector_size", det_size)
+            wise_optical_element.set_property("detector_size", self.detector_size*1e-6)
 
-            data_to_plot = numpy.zeros((5, n_auto))
-            data_to_plot[0, :] = mir_s * 1e3
+            data_to_plot = numpy.zeros((5, len(mir_s)))
+            data_to_plot[0, :] = mir_s / self.workspace_units_to_m
             data_to_plot[1, :] = Amp(mir_E)
             data_to_plot[2, :] = Cyc(mir_E)
             data_to_plot[3, :] = det_s * 1e6
@@ -227,14 +226,15 @@ class OWEllipticalMirror(WiseWidget):
                    Wavefront(electric_fields=electric_fields,
                              positions=det_s), \
                    data_to_plot
-        else:
-            raise Exception("Previous element not recognized")
+
+    def getTabTitles(self):
+        return ["|E0|: mirror", "Optical cycles", "Intensity on F2"]
 
     def getTitles(self):
         return ["|E0|: mirror", "Optical cycles", "Intensity on F2"]
 
     def getXTitles(self):
-        return ["rho [mm]", "Z [mm]", "Z [$\mu$m]"]
+        return ["rho [" + self.workspace_units_label + "]", "Z [" + self.workspace_units_label + "]", "Z [$\mu$m]"]
 
     def getYTitles(self):
         return ["E0", "Optical Cycles", "Intensity"]

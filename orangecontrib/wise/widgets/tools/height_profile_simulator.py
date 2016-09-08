@@ -202,23 +202,23 @@ class OWheight_profile_simulator(OWWidget):
             self.check_fields()
 
             if self.error_type_y == profiles_simulation.FIGURE_ERROR:
-                rms_y = self.rms_y * 1e-7 # from nm to cm
+                rms_y = self.rms_y * 1e-9 # from nm to m
             else:
                 rms_y = self.rms_y * 1e-6 # from urad to rad
 
 
-            xx, yy = profiles_simulation.simulate_profile_1D(step = self.step_y * self.workspace_units_to_cm,
-                                                             mirror_length = self.dimension_y * (self.workspace_units_to_cm),
+            xx, yy = profiles_simulation.simulate_profile_1D(step = self.step_y * self.workspace_units_to_m,
+                                                             mirror_length = self.dimension_y * self.workspace_units_to_m,
                                                              random_seed = self.montecarlo_seed_y,
                                                              error_type = self.error_type_y,
                                                              profile_type=1-self.kind_of_profile_y,
                                                              rms = rms_y,
-                                                             correlation_length = self.correlation_length_y * (self.workspace_units_to_cm),
+                                                             correlation_length = self.correlation_length_y * self.workspace_units_to_m,
                                                              power_law_exponent_beta = self.power_law_exponent_beta_y)
 
-            xx_to_plot = xx/self.workspace_units_to_cm # to user units
-            yy_to_plot = yy * 1e7 # nm
-            self.yy = yy/self.workspace_units_to_cm # to user units
+            xx_to_plot = xx/self.workspace_units_to_m # to user units
+            yy_to_plot = yy * 1e9 # nm
+            self.yy = yy/self.workspace_units_to_m # to user units
 
             ny = yy.size
 
@@ -229,7 +229,7 @@ class OWheight_profile_simulator(OWWidget):
             slope[ny-1] = slope[ny-2]
             sloperms = slope.std()
 
-            title = ' Slope error rms in Y direction: %f $\mu$rad' % (sloperms*1e6)
+            title = ' Slope error rms in Z direction: %f $\mu$rad' % (sloperms*1e6)
 
             if self.plot_canvas is None:
                 self.plot_canvas = PlotWindow(roi=False, control=False, position=False, plugins=False)
@@ -238,7 +238,7 @@ class OWheight_profile_simulator(OWWidget):
 
                 self.plot_tab.layout().addWidget(self.plot_canvas)
 
-            WisePlot.plot_histo(self.plot_canvas, xx_to_plot, yy_to_plot, title, "X [" + self.workspace_units_label + "]", "Y [nm]")
+            WisePlot.plot_histo(self.plot_canvas, xx_to_plot, yy_to_plot, title, "X [" + self.workspace_units_label + "]", "Z [nm]")
 
             QMessageBox.information(self, "QMessageBox.information()",
                                     "Height Profile calculated: if the result is satisfactory,\nclick \'Generate Height Profile File\' to complete the operation ",
@@ -264,8 +264,8 @@ class OWheight_profile_simulator(OWWidget):
 
 
                 self.send("PreInput", WisePreInputData(figure_error_file=self.heigth_profile_file_name,
-                                                       figure_error_step=self.step_y*self.workspace_units_to_cm*1e-2,
-                                                       figure_user_units_to_m=self.workspace_units_to_cm*1e-2))
+                                                       figure_error_step=self.step_y,
+                                                       figure_user_units_to_m=self.workspace_units_to_m))
             except Exception as exception:
                 QMessageBox.critical(self, "Error",
                                      exception.args[0],

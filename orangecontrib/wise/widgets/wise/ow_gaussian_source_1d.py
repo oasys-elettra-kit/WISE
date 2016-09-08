@@ -32,8 +32,8 @@ class OWGaussianSource1d(WiseWidget):
 
         main_box = oasysgui.widgetBox(self.controlArea, "Gaussian Source 1D Input Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5, height=200)
 
-        oasysgui.lineEdit(main_box, self, "source_lambda", "Wavelength [m]", labelWidth=260, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(main_box, self, "source_sigma", "Sigma [m]", labelWidth=260, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(main_box, self, "source_lambda", "Wavelength [nm]", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_source_sigma = oasysgui.lineEdit(main_box, self, "source_sigma", "Sigma", labelWidth=260, valueType=float, orientation="horizontal")
 
         gui.separator(main_box, height=5)
 
@@ -44,8 +44,8 @@ class OWGaussianSource1d(WiseWidget):
         self.source_position_box = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
         self.source_position_box_empty = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
 
-        oasysgui.lineEdit(self.source_position_box, self, "z_origin", "Z Origin [m]", labelWidth=260, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(self.source_position_box, self, "x_origin", "X Origin [m]", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_z_origin = oasysgui.lineEdit(self.source_position_box, self, "z_origin", "Z Origin", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_x_origin = oasysgui.lineEdit(self.source_position_box, self, "x_origin", "X Origin", labelWidth=260, valueType=float, orientation="horizontal")
         oasysgui.lineEdit(self.source_position_box, self, "theta", "Theta [deg]", labelWidth=260, valueType=float, orientation="horizontal")
 
         self.set_SourcePosition()
@@ -53,6 +53,15 @@ class OWGaussianSource1d(WiseWidget):
     def set_SourcePosition(self):
         self.source_position_box.setVisible(self.source_position == 0)
         self.source_position_box_empty.setVisible(self.source_position == 1)
+
+    def after_change_workspace_units(self):
+        label = self.le_source_sigma.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_z_origin.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_x_origin.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+
 
     def check_fields(self):
         self.source_lambda = congruence.checkStrictlyPositiveNumber(self.source_lambda, "Wavelength")
@@ -65,16 +74,16 @@ class OWGaussianSource1d(WiseWidget):
             self.x_origin = 0.0
             self.theta    = 0.0
 
-        wise_inner_source = Optics.GaussianSource_1d(self.source_lambda,
-                                                     self.source_sigma * numpy.sqrt(2),
-                                                     ZOrigin = self.z_origin,
-                                                     YOrigin =  self.x_origin,
-                                                     Theta = self.theta)
+        wise_inner_source = Optics.GaussianSource_1d(self.source_lambda * 1e-9,
+                                                     self.source_sigma * self.workspace_units_to_m * numpy.sqrt(2),
+                                                     ZOrigin = self.z_origin * self.workspace_units_to_m,
+                                                     YOrigin =  self.x_origin * self.workspace_units_to_m,
+                                                     Theta = numpy.radians(self.theta))
 
         data_to_plot = numpy.zeros((2, 100))
 
         data_to_plot[0, :] = self.z_origin + (-5*self.source_sigma) + numpy.arange(100)*(self.source_sigma*0.1)
-        data_to_plot[1, :] = (1/(self.source_sigma*numpy.sqrt(2*numpy.pi)))*numpy.exp(-0.5*(((data_to_plot[0, :]-self.z_origin)/self.source_sigma)**2))
+        data_to_plot[1, :] = numpy.exp(-0.5*(((data_to_plot[0, :]-self.z_origin)/self.source_sigma)**2))/(self.source_sigma*numpy.sqrt(2*numpy.pi))
 
         return wise_inner_source, data_to_plot
 
@@ -82,7 +91,7 @@ class OWGaussianSource1d(WiseWidget):
         return ["Gaussian Source Shape"]
 
     def getXTitles(self):
-        return ["Z [m]"]
+        return ["Z [" + self.workspace_units_label + "]"]
 
     def getYTitles(self):
         return ["Intensity [arbitrary units]"]

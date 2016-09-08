@@ -1,18 +1,17 @@
-import sys
 import numpy
-from PyQt4.QtGui import QApplication, QPalette, QColor, QFont, QDialog
+import time
+from PyQt4.QtGui import QApplication, QPalette, QColor, QFont, QMessageBox, QFileDialog
 
 from orangewidget import gui
 from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui
 from oasys.widgets import congruence
 
-from orangecontrib.wise.util.wise_objects import WiseOpticalElement, Wavefront, WiseOutput
+from orangecontrib.wise.util.wise_objects import WiseOutput
 from orangecontrib.wise.widgets.gui.ow_wise_widget import WiseWidget
+from orangecontrib.wise.util.wise_propagator import WisePropagatorsChain, WisePropagationAlgorithms, WisePropagationParameters
 
-from wiselib import Optics
-import wiselib.Rayman5 as Rayman
-from  wiselib.Rayman5 import Amp, Cyc
+from  wiselib.Rayman5 import Amp
 
 class OWDetector(WiseWidget):
     name = "Detector"
@@ -28,32 +27,38 @@ class OWDetector(WiseWidget):
 
     detector_size = 0.0
     oe_f2 = 0.0
-
     defocus_sweep = Setting(0.0)
-
     defocus_start = Setting(-10e-3)
     defocus_stop = Setting(10e-3)
     defocus_step = Setting(1e-3)
-
     use_multipool = Setting(0)
     n_pools = Setting(5)
+    show_animation = Setting(0)
+
+    input_data = None
 
     def set_input(self, input_data):
-        self.input_data = input_data
+        self.setStatusMessage("")
 
-        if not self.input_data.has_optical_elements():
-            raise Exception("Detector can be collegated only after an Optical Element")
+        if not input_data is None:
+            if not input_data.has_optical_element():
+                QMessageBox.critical(self, "Error", "Detector can be collegated only after an Optical Element", QMessageBox.Ok)
 
-        optical_element = self.input_data.get_last_optical_element()
+                self.setStatusMessage("Error!")
 
-        self.detector_size = numpy.round(optical_element.get_property("detector_size")*1e6, 1)
-        self.oe_f2         = optical_element.inner_wise_optical_element.f2
+            self.input_data = input_data
 
-        self.compute()
+            optical_element = self.input_data.get_optical_element()
+
+            self.detector_size = numpy.round(optical_element.get_property("detector_size")*1e6, 1)
+            self.oe_f2         = optical_element.inner_wise_optical_element.f2/self.workspace_units_to_m
+
+            self.compute()
 
 
     def build_gui(self):
         self.view_type = 1
+        self.button_box.setVisible(False)
 
         main_box = oasysgui.widgetBox(self.controlArea, "Detector Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
 
@@ -67,23 +72,25 @@ class OWDetector(WiseWidget):
         palette.setColor(QPalette.Base, QColor(243, 240, 160))
         le_detector_size.setPalette(palette)
 
-        le_oe_f2 = oasysgui.lineEdit(main_box, self, "oe_f2", "O.E. F2 [m]", labelWidth=260, valueType=float, orientation="horizontal")
-        le_oe_f2.setReadOnly(True)
-        font = QFont(le_oe_f2.font())
+        self.le_oe_f2 = oasysgui.lineEdit(main_box, self, "oe_f2", "O.E. F2", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_oe_f2.setReadOnly(True)
+        font = QFont(self.le_oe_f2.font())
         font.setBold(True)
-        le_oe_f2.setFont(font)
-        palette = QPalette(le_oe_f2.palette())
+        self.le_oe_f2.setFont(font)
+        palette = QPalette(self.le_oe_f2.palette())
         palette.setColor(QPalette.Text, QColor('dark blue'))
         palette.setColor(QPalette.Base, QColor(243, 240, 160))
-        le_oe_f2.setPalette(palette)
+        self.le_oe_f2.setPalette(palette)
 
-        oasysgui.lineEdit(main_box, self, "defocus_sweep", "Defocus sweep [m]", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_defocus_sweep = oasysgui.lineEdit(main_box, self, "defocus_sweep", "Defocus sweep", labelWidth=260, valueType=float, orientation="horizontal")
+
+        gui.button(main_box, self, "Move Detector on Defocused Position", callback=self.compute, height=35)
 
         best_focus_box = oasysgui.widgetBox(self.controlArea, "Best Focus Calculation", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
 
-        oasysgui.lineEdit(best_focus_box, self, "defocus_start", "Defocus sweep start [m]", labelWidth=260, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(best_focus_box, self, "defocus_stop", "Defocus sweep stop [m]", labelWidth=260, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(best_focus_box, self, "defocus_step", "Defocus sweep step [m]", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_defocus_start = oasysgui.lineEdit(best_focus_box, self, "defocus_start", "Defocus sweep start", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_defocus_stop  = oasysgui.lineEdit(best_focus_box, self, "defocus_stop", "Defocus sweep stop", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_defocus_step  = oasysgui.lineEdit(best_focus_box, self, "defocus_step", "Defocus sweep step", labelWidth=260, valueType=float, orientation="horizontal")
 
         gui.comboBox(best_focus_box, self, "use_multipool", label="Use Parallel Processing",
                      items=["No", "Yes"], labelWidth=260,
@@ -94,9 +101,18 @@ class OWDetector(WiseWidget):
 
         oasysgui.lineEdit(self.use_multipool_box, self, "n_pools", "Nr. Parallel Processes", labelWidth=260, valueType=int, orientation="horizontal")
 
-        gui.button(best_focus_box, self, "Find Best Focus Position", callback=self.do_best_focus_calculation, height=35)
-
         self.set_Multipool()
+
+        gui.separator(best_focus_box, height=5)
+
+        gui.checkBox(best_focus_box, self, "show_animation", "Show animation during calculation")
+
+        gui.separator(best_focus_box, height=5)
+
+        gui.button(best_focus_box, self, "Find Best Focus Position", callback=self.do_best_focus_calculation, height=35)
+        self.save_button = gui.button(best_focus_box, self, "Save Best Focus Calculation Complete Results", callback=self.save_best_focus_results, height=35)
+        self.save_button.setEnabled(False)
+
 
     def set_Multipool(self):
         self.use_multipool_box.setVisible(self.use_multipool == 1)
@@ -104,6 +120,19 @@ class OWDetector(WiseWidget):
 
     def set_ViewType(self):
         self.view_type = 1
+
+    def after_change_workspace_units(self):
+        label = self.le_oe_f2.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_defocus_sweep.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_defocus_start.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_defocus_stop.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_defocus_step.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+
 
     def check_fields(self):
         if self.use_multipool == 1:
@@ -119,39 +148,28 @@ class OWDetector(WiseWidget):
         else:
             if self.oe_f2 + self.defocus_sweep <= 0: raise Exception("Defocus sweep reached the previous mirror")
 
-            source =  self.input_data.get_source().inner_wise_source
-            elliptic_mirror = self.input_data.get_last_optical_element().inner_wise_optical_element
 
-            theta_0 = elliptic_mirror.pTan_Angle
-            theta_1 = numpy.arctan(-1/elliptic_mirror.p2[0])
-            det_size = self.input_data.get_last_optical_element().get_property("detector_size")
-            n_auto = Rayman.SamplingCalculator(source.Lambda,
-                                               elliptic_mirror.f2,
-                                               elliptic_mirror.L,
-                                               det_size,
-                                               theta_0,
-                                               theta_1)
+            propagation_parameter = WisePropagationParameters(source=self.input_data.get_source().inner_wise_source,
+                                                              optical_element=self.input_data.get_optical_element().inner_wise_optical_element,
+                                                              detector_size=self.input_data.get_optical_element().get_property("detector_size"),
+                                                              defocus_sweep=self.defocus_sweep * self.workspace_units_to_m)
 
-            # Piano specchio (Sorgente=>Specchio)
-            mir_x, mir_y = elliptic_mirror.GetXY_MeasuredMirror(n_auto, 0)
-            mir_E = source.EvalField_XYLab(mir_x, mir_y)
 
-            det_x, det_y = elliptic_mirror.GetXY_TransversePlaneAtF2(det_size, n_auto, self.defocus_sweep)
-            det_s = Rayman.xy_to_s(det_x, det_y)
+            propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
+                                                                                WisePropagationAlgorithms.HuygensIntegral)
 
-            electric_fields = Rayman.HuygensIntegral_1d_MultiPool(source.Lambda,
-                                                                  mir_E,
-                                                                  mir_x,
-                                                                  mir_y,
-                                                                  det_x,
-                                                                  det_y,
-                                                                  0)
 
-            data_to_plot = numpy.zeros((5, n_auto))
-            data_to_plot[0, :] = det_s * 1e6
+            positions = propagation_output.det_s
+            electric_fields = propagation_output.electric_fields
+
+            data_to_plot = numpy.zeros((5, len(positions)))
+            data_to_plot[0, :] = positions * 1e6
             data_to_plot[1, :] = Amp(electric_fields)**2
 
         return data_to_plot
+
+    def getTabTitles(self):
+        return ["Intensity on O.E. Focus", "Intensity on Best Focus"]
 
     def getTitles(self):
         return ["Intensity on Focus Position: " + str(numpy.round(self.oe_f2 + self.defocus_sweep, 6))]
@@ -175,76 +193,147 @@ class OWDetector(WiseWidget):
         return None
 
     def do_best_focus_calculation(self):
-        if self.defocus_start >= self.defocus_stop: raise Exception("Defocus sweep start must be < Defocus sweep stop")
-        self.defocus_step = congruence.checkStrictlyPositiveNumber(self. defocus_step, "Defocus sweep step")
-        if self.defocus_step >= self.defocus_stop - self.defocus_start: raise Exception("Defocus step is too big")
+        if not self.input_data is None:
+            if self.defocus_start >= self.defocus_stop: raise Exception("Defocus sweep start must be < Defocus sweep stop")
+            self.defocus_step = congruence.checkStrictlyPositiveNumber(self. defocus_step, "Defocus sweep step")
+            if self.defocus_step >= self.defocus_stop - self.defocus_start: raise Exception("Defocus step is too big")
 
-        source =  self.input_data.get_source().inner_wise_source
-        elliptic_mirror = self.input_data.get_last_optical_element().inner_wise_optical_element
+            self.setStatusMessage("")
+            self.progressBarInit()
 
-        theta_0 = elliptic_mirror.pTan_Angle
-        theta_1 = numpy.arctan(-1/elliptic_mirror.p2[0])
-        det_size = self.input_data.get_last_optical_element().get_property("detector_size")
-        n_auto = Rayman.SamplingCalculator(source.Lambda,
-                                           elliptic_mirror.f2,
-                                           elliptic_mirror.L,
-                                           det_size,
-                                           theta_0,
-                                           theta_1)
+            try:
+                source =  self.input_data.get_source().inner_wise_source
+                elliptic_mirror = self.input_data.get_optical_element().inner_wise_optical_element
+                detector_size = self.input_data.get_optical_element().get_property("detector_size")
 
-        if self.use_multipool == 0:
-            n_pools = 0
-        else:
-            n_pools = self.n_pools
+                defocus_list = numpy.arange(self.defocus_start * self.workspace_units_to_m,
+                                            self.defocus_stop * self.workspace_units_to_m,
+                                            self.defocus_step * self.workspace_units_to_m)
+                n_defocus = len(defocus_list)
 
-        # Piano specchio (Sorgente=>Specchio)
-        mir_x, mir_y = elliptic_mirror.GetXY_MeasuredMirror(n_auto, 0)
-        mir_E = source.EvalField_XYLab(mir_x, mir_y)
+                progress_bar_increment = 100/n_defocus
 
-        defocus_list = numpy.arange(self.defocus_start, self.defocus_stop, self.defocus_step)
+                if self.use_multipool == 0:
+                    n_pools = 0
+                else:
+                    n_pools = self.n_pools
 
-        n_defocus = len(defocus_list)
+                index_min = -1
+                hew_min = numpy.inf
+                self.electric_fields_list = []
+                self.positions_list = []
+                self.hews_list = []
 
-        E1_list = numpy.empty((n_defocus, n_auto) , dtype = complex)
+                propagation_parameter = WisePropagationParameters(source=source,
+                                                                  optical_element=elliptic_mirror,
+                                                                  detector_size=detector_size,
+                                                                  n_pools=n_pools)
 
-        index_min = -1
-        hew_min = numpy.inf
 
-        for i, defocus in enumerate(defocus_list):
-            print ('Processing %d/%d: Defocus = %0.1f mm' %(i, n_defocus, (defocus * 1e3)))
-            # Specchio => Detector
-            det_x, det_y = elliptic_mirror.GetXY_TransversePlaneAtF2(det_size, n_auto, defocus)
-            det_ds = numpy.sqrt((det_x[0] - det_x[-1])**2 + (det_y[0] - det_y[-1])**2)
+                self.setStatusMessage("Calculating Best Focus Position")
 
-            # E1
-            E1_list[i, :] = Rayman.HuygensIntegral_1d_MultiPool(source.Lambda,
-                                                                mir_E,
-                                                                mir_x,
-                                                                mir_y,
-                                                                det_x,
-                                                                det_y,
-                                                                n_pools)
+                if self.show_animation == 1: time.sleep(0.5)
 
-            hew = Rayman.HalfEnergyWidth_1d(abs(E1_list[i, :])**2, Step = det_ds)
+                for i, defocus in enumerate(defocus_list):
+                    if numpy.abs(defocus) < 1e-15: defocus = 0.0
 
-            if hew < hew_min:
-                hew_min = hew
-                index_min = i
+                    propagation_parameter.defocus_sweep = defocus
 
-        electric_fields = E1_list[index_min, :]
-        new__fw = self.oe_f2 + defocus_list[index_min]
-        det_x, det_y = elliptic_mirror.GetXY_TransversePlaneAtF2(det_size, n_auto, defocus_list[index_min])
-        det_s = Rayman.xy_to_s(det_x, det_y)
+                    propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
+                                                                                        WisePropagationAlgorithms.HuygensIntegral)
+                    # E1
+                    self.electric_fields_list.append(propagation_output.electric_fields)
+                    self.positions_list.append(propagation_output.det_s)
+                    self.hews_list.append(propagation_output.HEW)
 
-        self.plot_histo(det_s * 1e6,
-                        Amp(electric_fields)**2,
-                        80,
-                        tabs_canvas_index=0,
-                        plot_canvas_index=0,
-                        title="Intensity at Best Focus Position: " + str(new__fw),
-                        xtitle="Z [$\mu$m]",
-                        ytitle="Intensity",
-                        log_x=False,
-                        log_y=False)
+                    if self.show_animation == 1:
+                        self.plot_histo(propagation_output.det_s * 1e6,
+                                        Amp(propagation_output.electric_fields)**2,
+                                        i*progress_bar_increment,
+                                        tabs_canvas_index=1,
+                                        plot_canvas_index=1,
+                                        title="(" + str(i+1) + "/" + str(n_defocus) + ") Intensity at Defocus Sweep: " + str(defocus/self.workspace_units_to_m) + ", HEW: " + str(round(propagation_output.HEW, 5)),
+                                        xtitle="Z [$\mu$m]",
+                                        ytitle="Intensity",
+                                        log_x=False,
+                                        log_y=False)
+
+                        time.sleep(0.2)
+
+                        self.tabs.setCurrentIndex(1)
+                    else:
+                        self.progressBarSet(value=i*progress_bar_increment)
+
+                    if propagation_output.HEW < hew_min:
+                        hew_min = propagation_output.HEW
+                        index_min = i
+
+
+                best_focus_electric_fields = self.electric_fields_list[index_min]
+                best_focus_positions       = self.positions_list[index_min]
+
+                if self.show_animation == 1:
+                    QMessageBox.information(self,
+                                            "Best Focus Calculation",
+                                            "Best Focus Found!\n\nPosition: " + str(self.oe_f2 + (defocus_list[index_min]/self.workspace_units_to_m)) + "\nHEW: " + str(round(self.hews_list[index_min], 5)),
+                                            QMessageBox.Ok
+                                            )
+
+                self.plot_histo(best_focus_positions * 1e6,
+                                Amp(best_focus_electric_fields) ** 2,
+                                80,
+                                tabs_canvas_index=1,
+                                plot_canvas_index=1,
+                                title="Intensity at Best Focus Position: " + str(self.oe_f2 + (defocus_list[index_min]/self.workspace_units_to_m)) + ", HEW: " + str(round(self.hews_list[index_min], 5)),
+                                xtitle="Z [$\mu$m]",
+                                ytitle="Intensity",
+                                log_x=False,
+                                log_y=False)
+
+                self.tabs.setCurrentIndex(1)
+                self.setStatusMessage("")
+
+                self.save_button.setEnabled(True)
+
+            except Exception as exception:
+                QMessageBox.critical(self, "Error", str(exception), QMessageBox.Ok)
+
+                self.setStatusMessage("Error!")
+
+                #raise exception
+
 
         self.progressBarFinished()
+
+    def save_best_focus_results(self):
+        try:
+            path_dir = QFileDialog.getExistingDirectory(self, "Select destination directory", ".", QFileDialog.ShowDirsOnly)
+
+            if not path_dir is None:
+                if not path_dir.strip() == "":
+                    for index in range(0, len(self.electric_fields_list)):
+                        file_name = "best_focus_partial_result_" + str(index) + ".dat"
+
+                        file = open(path_dir + "/" + file_name, "w")
+
+                        intensities = Amp(self.electric_fields_list[index]) ** 2
+
+                        file.write("# HEW: " + str(self.hews_list[index]) + "\n")
+                        file.write("# Position [um]  Intensity\n")
+
+                        for i in range (0, len(self.positions_list[index])):
+                            file.write(str(self.positions_list[index][i]) + " " + str(intensities[i]) + "\n")
+
+
+                        file.close()
+
+                    QMessageBox.information(self,
+                                            "Best Focus Calculation",
+                                            "Best Focus Calculation complete results saved on directory:\n" + path_dir,
+                                            QMessageBox.Ok
+                                            )
+
+        except Exception as exception:
+            QMessageBox.critical(self, "Error", str(exception), QMessageBox.Ok)
+
+            self.setStatusMessage("Error!")

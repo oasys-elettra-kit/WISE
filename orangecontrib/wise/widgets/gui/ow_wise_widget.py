@@ -102,7 +102,7 @@ class WiseWidget(widget.OWWidget):
         for index in indexes:
             self.tabs.removeTab(size-1-index)
 
-        titles = self.getTitles()
+        titles = self.getTabTitles()
 
         self.tab = []
         self.plot_canvas = []
@@ -114,6 +114,9 @@ class WiseWidget(widget.OWWidget):
         for tab in self.tab:
             tab.setFixedHeight(self.IMAGE_HEIGHT)
             tab.setFixedWidth(self.IMAGE_WIDTH)
+
+    def getTabTitles(self):
+        return ["Calculation Result"]
 
     def getTitles(self):
         return ["Calculation Result"]
@@ -240,7 +243,7 @@ class WiseWidget(widget.OWWidget):
 
             self.setStatusMessage("Error!")
 
-            raise exception
+            #raise exception
 
         self.progressBarFinished()
 
