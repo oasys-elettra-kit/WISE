@@ -32,6 +32,7 @@ class WiseWidget(widget.OWWidget):
     view_type=Setting(1)
 
     calculated_data = None
+    plot_data = None
 
     want_main_area = 1
 

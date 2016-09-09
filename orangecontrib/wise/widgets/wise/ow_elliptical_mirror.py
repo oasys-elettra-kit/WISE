@@ -75,7 +75,6 @@ class OWEllipticalMirror(WiseWidget):
                 self.set_UseRoughness()
 
     def build_gui(self):
-
         main_box = oasysgui.widgetBox(self.controlArea, "Elliptical Mirror Input Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
 
         self.le_f1 = oasysgui.lineEdit(main_box, self, "f1", "F1", labelWidth=260, valueType=float, orientation="horizontal")
@@ -162,70 +161,72 @@ class OWEllipticalMirror(WiseWidget):
             congruence.checkFileName(self.roughness_file)
 
     def do_wise_calculation(self):
-        if not self.input_data is None:
-            elliptic_mirror = Optics.Ellipse(f1 = self.f1 * self.workspace_units_to_m,
-                                             f2 = self.f2 * self.workspace_units_to_m,
-                                             Alpha = numpy.radians(self.alpha),
-                                             L = self.length * self.workspace_units_to_m)
+        if self.input_data is None:
+            raise Exception("No Input Data!")
 
-            if self.use_figure_error == 1:
-                elliptic_mirror.FigureErrorAdd(numpy.loadtxt(self.figure_error_file) * self.figure_error_um_conversion,
-                                               self.figure_error_step * self.workspace_units_to_m) # (m)
+        elliptic_mirror = Optics.Ellipse(f1 = self.f1 * self.workspace_units_to_m,
+                                         f2 = self.f2 * self.workspace_units_to_m,
+                                         Alpha = numpy.radians(self.alpha),
+                                         L = self.length * self.workspace_units_to_m)
 
-
-
-            if self.use_roughness == 1:
-                elliptic_mirror.Roughness.NumericPsdLoadXY(self.roughness_file,
-                                                           xScaling = self.roughness_x_scaling * self.workspace_units_to_m,
-                                                           yScaling = self.roughness_y_scaling * self.workspace_units_to_m,
-                                                           xIsSpatialFreq = False)
-                elliptic_mirror.Roughness.Options.FIT_NUMERIC_DATA_WITH_POWER_LAW = (self.roughness_fit_data == 1)
-                elliptic_mirror.Options.USE_ROUGHNESS = True
-            else:
-                elliptic_mirror.Options.USE_ROUGHNESS = False
-
-            #------------------------------------------------------------
-
-            wise_source = self.input_data.get_source()
-
-            if wise_source.get_property("source_on_mirror_focus"):
-                wise_source.inner_wise_source = Optics.GaussianSource_1d(wise_source.inner_wise_source.Lambda,
-                                                                         wise_source.inner_wise_source.Waist0,
-                                                                         ZOrigin = elliptic_mirror.XYF1[0],
-                                                                         YOrigin = elliptic_mirror.XYF1[1],
-                                                                         Theta = elliptic_mirror.p1_Angle)
+        if self.use_figure_error == 1:
+            elliptic_mirror.FigureErrorAdd(numpy.loadtxt(self.figure_error_file) * self.figure_error_um_conversion,
+                                           self.figure_error_step * self.workspace_units_to_m) # (m)
 
 
 
-            propagation_parameter = WisePropagationParameters(source=wise_source.inner_wise_source,
-                                                              optical_element=elliptic_mirror,
-                                                              detector_size=self.detector_size*1e-6)
+        if self.use_roughness == 1:
+            elliptic_mirror.Roughness.NumericPsdLoadXY(self.roughness_file,
+                                                       xScaling = self.roughness_x_scaling * self.workspace_units_to_m,
+                                                       yScaling = self.roughness_y_scaling * self.workspace_units_to_m,
+                                                       xIsSpatialFreq = False)
+            elliptic_mirror.Roughness.Options.FIT_NUMERIC_DATA_WITH_POWER_LAW = (self.roughness_fit_data == 1)
+            elliptic_mirror.Options.USE_ROUGHNESS = True
+        else:
+            elliptic_mirror.Options.USE_ROUGHNESS = False
+
+        #------------------------------------------------------------
+
+        wise_source = self.input_data.get_source()
+
+        if wise_source.get_property("source_on_mirror_focus"):
+            wise_source.inner_wise_source = Optics.GaussianSource_1d(wise_source.inner_wise_source.Lambda,
+                                                                     wise_source.inner_wise_source.Waist0,
+                                                                     ZOrigin = elliptic_mirror.XYF1[0],
+                                                                     YOrigin = elliptic_mirror.XYF1[1],
+                                                                     Theta = elliptic_mirror.p1_Angle)
 
 
-            propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
-                                                                                WisePropagationAlgorithms.HuygensIntegral)
+
+        propagation_parameter = WisePropagationParameters(source=wise_source.inner_wise_source,
+                                                          optical_element=elliptic_mirror,
+                                                          detector_size=self.detector_size*1e-6)
 
 
-            mir_E = propagation_output.mir_E
-            mir_s = propagation_output.mir_s
-            det_s = propagation_output.det_s
-            electric_fields = propagation_output.electric_fields
+        propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
+                                                                            WisePropagationAlgorithms.HuygensIntegral)
 
-            wise_optical_element = WiseOpticalElement(inner_wise_optical_element=elliptic_mirror)
-            wise_optical_element.set_property("detector_size", self.detector_size*1e-6)
 
-            data_to_plot = numpy.zeros((5, len(mir_s)))
-            data_to_plot[0, :] = mir_s / self.workspace_units_to_m
-            data_to_plot[1, :] = Amp(mir_E)
-            data_to_plot[2, :] = Cyc(mir_E)
-            data_to_plot[3, :] = det_s * 1e6
-            data_to_plot[4, :] = Amp(electric_fields)**2
+        mir_E = propagation_output.mir_E
+        mir_s = propagation_output.mir_s
+        det_s = propagation_output.det_s
+        electric_fields = propagation_output.electric_fields
 
-            return wise_source, \
-                   wise_optical_element, \
-                   Wavefront(electric_fields=electric_fields,
-                             positions=det_s), \
-                   data_to_plot
+        wise_optical_element = WiseOpticalElement(inner_wise_optical_element=elliptic_mirror)
+        wise_optical_element.set_property("detector_size", self.detector_size*1e-6)
+
+        data_to_plot = numpy.zeros((5, len(mir_s)))
+        data_to_plot[0, :] = mir_s / self.workspace_units_to_m
+        data_to_plot[1, :] = Amp(mir_E)
+        data_to_plot[2, :] = Cyc(mir_E)
+        data_to_plot[3, :] = det_s * 1e6
+        data_to_plot[4, :] = Amp(electric_fields)**2
+
+        return wise_source, \
+               wise_optical_element, \
+               Wavefront(electric_fields=electric_fields,
+                         positions=det_s), \
+               data_to_plot
 
     def getTabTitles(self):
         return ["|E0|: mirror", "Optical cycles", "Intensity on F2"]

@@ -141,6 +141,9 @@ class OWDetector(WiseWidget):
             self.n_pools = congruence.checkStrictlyPositiveNumber(self.n_pools, "Nr. Parallel Processes")
 
     def do_wise_calculation(self):
+        if self.input_data is None:
+            raise Exception("No Input Data!")
+
         if self.defocus_sweep == 0.0:
             wavefront = self.input_data.get_wavefront()
 
@@ -195,14 +198,17 @@ class OWDetector(WiseWidget):
         return None
 
     def do_best_focus_calculation(self):
-        if not self.input_data is None:
+        try:
+            if self.input_data is None:
+                raise Exception("No Input Data!")
+
             if self.defocus_start >= self.defocus_stop: raise Exception("Defocus sweep start must be < Defocus sweep stop")
             self.defocus_step = congruence.checkStrictlyPositiveNumber(self. defocus_step, "Defocus sweep step")
             if self.defocus_step >= self.defocus_stop - self.defocus_start: raise Exception("Defocus step is too big")
 
             if self.best_focus_slider is None:
                 self.best_focus_slider = QSlider(self.tab[1])
-                self.best_focus_slider.setGeometry(QRect(120, 380, 321, 31))
+                self.best_focus_slider.setGeometry(QRect(0, 0, 320, 50))
                 self.best_focus_slider.setOrientation(Qt.Horizontal)
                 self.best_focus_slider.setInvertedAppearance(False)
                 self.best_focus_slider.setInvertedControls(False)
@@ -215,153 +221,154 @@ class OWDetector(WiseWidget):
             self.setStatusMessage("")
             self.progressBarInit()
 
-            try:
-                source =  self.input_data.get_source().inner_wise_source
-                elliptic_mirror = self.input_data.get_optical_element().inner_wise_optical_element
-                detector_size = self.input_data.get_optical_element().get_property("detector_size")
+            source =  self.input_data.get_source().inner_wise_source
+            elliptic_mirror = self.input_data.get_optical_element().inner_wise_optical_element
+            detector_size = self.input_data.get_optical_element().get_property("detector_size")
 
-                self.defocus_list = numpy.arange(self.defocus_start * self.workspace_units_to_m,
-                                            self.defocus_stop * self.workspace_units_to_m,
-                                            self.defocus_step * self.workspace_units_to_m)
-                n_defocus = len(self.defocus_list)
+            self.defocus_list = numpy.arange(self.defocus_start * self.workspace_units_to_m,
+                                        self.defocus_stop * self.workspace_units_to_m,
+                                        self.defocus_step * self.workspace_units_to_m)
+            n_defocus = len(self.defocus_list)
 
-                self.best_focus_slider.setTickInterval(1)
-                self.best_focus_slider.setSingleStep(1)
-                self.best_focus_slider.setMinimum(0)
-                self.best_focus_slider.setMaximum(n_defocus)
-                self.best_focus_slider.setValue(0)
+            self.best_focus_slider.setTickInterval(1)
+            self.best_focus_slider.setSingleStep(1)
+            self.best_focus_slider.setMinimum(0)
+            self.best_focus_slider.setMaximum(n_defocus)
+            self.best_focus_slider.setValue(0)
 
-                progress_bar_increment = 100/n_defocus
+            progress_bar_increment = 100/n_defocus
 
-                if self.use_multipool == 0:
-                    n_pools = 0
-                else:
-                    n_pools = self.n_pools
+            if self.use_multipool == 0:
+                n_pools = 0
+            else:
+                n_pools = self.n_pools
 
-                index_min = -1
-                hew_min = numpy.inf
+            index_min = -1
+            hew_min = numpy.inf
 
-                self.best_focus_index = -1
-                self.electric_fields_list = []
-                self.positions_list = []
-                self.hews_list = []
+            self.best_focus_index = -1
+            self.electric_fields_list = []
+            self.positions_list = []
+            self.hews_list = []
 
-                propagation_parameter = WisePropagationParameters(source=source,
-                                                                  optical_element=elliptic_mirror,
-                                                                  detector_size=detector_size,
-                                                                  n_pools=n_pools)
-
-
-                self.setStatusMessage("Calculating Best Focus Position")
-
-                if self.show_animation == 1: time.sleep(0.5)
-
-                for i, defocus in enumerate(self.defocus_list):
-                    if numpy.abs(defocus) < 1e-15:
-                        defocus = 0.0
-                        self.defocus_list[i] = 0.0
+            propagation_parameter = WisePropagationParameters(source=source,
+                                                              optical_element=elliptic_mirror,
+                                                              detector_size=detector_size,
+                                                              n_pools=n_pools)
 
 
-                    propagation_parameter.defocus_sweep = defocus
+            self.setStatusMessage("Calculating Best Focus Position")
 
-                    propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
-                                                                                        WisePropagationAlgorithms.HuygensIntegral)
-                    # E1
-                    self.electric_fields_list.append(propagation_output.electric_fields)
-                    self.positions_list.append(propagation_output.det_s)
-                    self.hews_list.append(propagation_output.HEW)
+            if self.show_animation == 1: time.sleep(0.5)
 
-                    if self.show_animation == 1:
-                        self.plot_histo(propagation_output.det_s * 1e6,
-                                        Amp(propagation_output.electric_fields)**2,
-                                        i*progress_bar_increment,
-                                        tabs_canvas_index=1,
-                                        plot_canvas_index=1,
-                                        title="Defocus Sweep: " + str(defocus/self.workspace_units_to_m) + " (" + str(i+1) + "/" + str(n_defocus) + "), HEW: " + str(round(propagation_output.HEW, 5)),
-                                        xtitle="Z [$\mu$m]",
-                                        ytitle="Intensity",
-                                        log_x=False,
-                                        log_y=False)
+            for i, defocus in enumerate(self.defocus_list):
+                if numpy.abs(defocus) < 1e-15:
+                    defocus = 0.0
+                    self.defocus_list[i] = 0.0
 
-                        time.sleep(0.2)
 
-                        self.tabs.setCurrentIndex(1)
-                    else:
-                        self.progressBarSet(value=i*progress_bar_increment)
+                propagation_parameter.defocus_sweep = defocus
 
-                    self.best_focus_slider.setValue(i+1)
-
-                    if propagation_output.HEW < hew_min:
-                        hew_min = propagation_output.HEW
-                        index_min = i
-
-                self.best_focus_index = index_min
-                best_focus_electric_fields = self.electric_fields_list[index_min]
-                best_focus_positions       = self.positions_list[index_min]
+                propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
+                                                                                    WisePropagationAlgorithms.HuygensIntegral)
+                # E1
+                self.electric_fields_list.append(propagation_output.electric_fields)
+                self.positions_list.append(propagation_output.det_s)
+                self.hews_list.append(propagation_output.HEW)
 
                 if self.show_animation == 1:
-                    QMessageBox.information(self,
-                                            "Best Focus Calculation",
-                                            "Best Focus Found!\n\nPosition: " + str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) + "\nHEW: " + str(round(self.hews_list[index_min], 5)),
-                                            QMessageBox.Ok
-                                            )
+                    self.plot_histo(propagation_output.det_s * 1e6,
+                                    Amp(propagation_output.electric_fields)**2,
+                                    i*progress_bar_increment,
+                                    tabs_canvas_index=1,
+                                    plot_canvas_index=1,
+                                    title="Defocus Sweep: " + str(defocus/self.workspace_units_to_m) + " (" + str(i+1) + "/" + str(n_defocus) + "), HEW: " + str(round(propagation_output.HEW, 5)),
+                                    xtitle="Z [$\mu$m]",
+                                    ytitle="Intensity",
+                                    log_x=False,
+                                    log_y=False)
 
-                self.plot_histo(best_focus_positions * 1e6,
-                                Amp(best_focus_electric_fields) ** 2,
-                                100,
-                                tabs_canvas_index=1,
-                                plot_canvas_index=1,
-                                title="(BEST FOCUS) Defocus Sweep: " + str(self.defocus_list[index_min]/self.workspace_units_to_m) + " ("+ str(index_min+1) + "/" + str(n_defocus) + "), Position: " + str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) + ", HEW: " + str(round(self.hews_list[index_min], 5)),
-                                xtitle="Z [$\mu$m]",
-                                ytitle="Intensity",
-                                log_x=False,
-                                log_y=False)
+                    #time.sleep(0.1)
 
-                self.best_focus_slider.setValue(index_min)
-                self.best_focus_slider.valueChanged.connect(self.plot_detail)
+                    self.tabs.setCurrentIndex(1)
+                else:
+                    self.progressBarSet(value=i*progress_bar_increment)
 
-                self.tabs.setCurrentIndex(1)
-                self.setStatusMessage("")
+                self.best_focus_slider.setValue(i+1)
 
-                self.save_button.setEnabled(True)
+                if propagation_output.HEW < hew_min:
+                    hew_min = propagation_output.HEW
+                    index_min = i
 
-            except Exception as exception:
-                QMessageBox.critical(self, "Error", str(exception), QMessageBox.Ok)
+            self.best_focus_index = index_min
+            best_focus_electric_fields = self.electric_fields_list[index_min]
+            best_focus_positions       = self.positions_list[index_min]
 
-                self.setStatusMessage("Error!")
+            if self.show_animation == 1:
+                QMessageBox.information(self,
+                                        "Best Focus Calculation",
+                                        "Best Focus Found!\n\nPosition: " + str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) + "\nHEW: " + str(round(self.hews_list[index_min], 5)),
+                                        QMessageBox.Ok
+                                        )
 
-                #raise exception
+            self.plot_histo(best_focus_positions * 1e6,
+                            Amp(best_focus_electric_fields) ** 2,
+                            100,
+                            tabs_canvas_index=1,
+                            plot_canvas_index=1,
+                            title="(BEST FOCUS) Defocus Sweep: " + str(self.defocus_list[index_min]/self.workspace_units_to_m) + " ("+ str(index_min+1) + "/" + str(n_defocus) + "), Position: " + str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) + ", HEW: " + str(round(self.hews_list[index_min], 5)),
+                            xtitle="Z [$\mu$m]",
+                            ytitle="Intensity",
+                            log_x=False,
+                            log_y=False)
 
+            self.best_focus_slider.setValue(index_min)
+            self.best_focus_slider.valueChanged.connect(self.plot_detail)
+
+            self.tabs.setCurrentIndex(1)
+            self.setStatusMessage("")
+
+            self.save_button.setEnabled(True)
+
+        except Exception as exception:
+            QMessageBox.critical(self, "Error", str(exception), QMessageBox.Ok)
+
+            self.setStatusMessage("Error!")
+
+            #raise exception
 
         self.progressBarFinished()
 
 
     def plot_detail(self, value):
-        index = value - 1
-        n_defocus = len(self.positions_list)
+        try:
+            index = value - 1
+            n_defocus = len(self.positions_list)
 
-        electric_fields = self.electric_fields_list[index]
-        positions       = self.positions_list[index]
+            electric_fields = self.electric_fields_list[index]
+            positions       = self.positions_list[index]
 
-        if index == self.best_focus_index:
-            title = "(BEST FOCUS) Defocus Sweep: " + str(self.defocus_list[index]/self.workspace_units_to_m) + " ("+ str(index+1) + "/" + str(n_defocus) + "), Position: " + str(self.oe_f2 + (self.defocus_list[index]/self.workspace_units_to_m)) + ", HEW: " + str(round(self.hews_list[index], 5))
-        else:
-            title = "Defocus Sweep: " + str(self.defocus_list[index]/self.workspace_units_to_m) + " (" + str(index+1) + "/" + str(n_defocus) + "), HEW: " + str(round(self.hews_list[index], 5))
-
-
-        self.plot_histo(positions * 1e6,
-                        Amp(electric_fields)**2,
-                        100,
-                        tabs_canvas_index=1,
-                        plot_canvas_index=1,
-                        title=title,
-                        xtitle="Z [$\mu$m]",
-                        ytitle="Intensity",
-                        log_x=False,
-                        log_y=False)
+            if index == self.best_focus_index:
+                title = "(BEST FOCUS) Defocus Sweep: " + str(self.defocus_list[index]/self.workspace_units_to_m) + " ("+ str(index+1) + "/" + str(n_defocus) + "), Position: " + str(self.oe_f2 + (self.defocus_list[index]/self.workspace_units_to_m)) + ", HEW: " + str(round(self.hews_list[index], 5))
+            else:
+                title = "Defocus Sweep: " + str(self.defocus_list[index]/self.workspace_units_to_m) + " (" + str(index+1) + "/" + str(n_defocus) + "), HEW: " + str(round(self.hews_list[index], 5))
 
 
-        self.tabs.setCurrentIndex(1)
+            self.plot_histo(positions * 1e6,
+                            Amp(electric_fields)**2,
+                            100,
+                            tabs_canvas_index=1,
+                            plot_canvas_index=1,
+                            title=title,
+                            xtitle="Z [$\mu$m]",
+                            ytitle="Intensity",
+                            log_x=False,
+                            log_y=False)
+
+
+            self.tabs.setCurrentIndex(1)
+        except:
+            pass
 
     def save_best_focus_results(self):
         try:

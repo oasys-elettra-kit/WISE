@@ -13,7 +13,7 @@ NAME = "WISE Tools"
 
 DESCRIPTION = "Widgets for WISE"
 
-BACKGROUND = "#FF0000"
+BACKGROUND = "#FE2E2E"
 
 ICON = "icons/wise_tools.png"
 
