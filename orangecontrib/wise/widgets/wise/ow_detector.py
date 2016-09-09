@@ -226,14 +226,20 @@ class OWDetector(WiseWidget):
             detector_size = self.input_data.get_optical_element().get_property("detector_size")
 
             self.defocus_list = numpy.arange(self.defocus_start * self.workspace_units_to_m,
-                                        self.defocus_stop * self.workspace_units_to_m,
-                                        self.defocus_step * self.workspace_units_to_m)
+                                             self.defocus_stop  * self.workspace_units_to_m,
+                                             self.defocus_step  * self.workspace_units_to_m)
+
             n_defocus = len(self.defocus_list)
+
+            if self.defocus_list[-1] != self.defocus_stop  * self.workspace_units_to_m:
+                n_defocus += 1
+                self.defocus_list.resize(n_defocus)
+                self.defocus_list[-1] = self.defocus_stop  * self.workspace_units_to_m
 
             self.best_focus_slider.setTickInterval(1)
             self.best_focus_slider.setSingleStep(1)
             self.best_focus_slider.setMinimum(0)
-            self.best_focus_slider.setMaximum(n_defocus)
+            self.best_focus_slider.setMaximum(n_defocus-1)
             self.best_focus_slider.setValue(0)
 
             progress_bar_increment = 100/n_defocus
@@ -276,6 +282,8 @@ class OWDetector(WiseWidget):
                 self.positions_list.append(propagation_output.det_s)
                 self.hews_list.append(propagation_output.HEW)
 
+                self.best_focus_slider.setValue(i)
+
                 if self.show_animation == 1:
                     self.plot_histo(propagation_output.det_s * 1e6,
                                     Amp(propagation_output.electric_fields)**2,
@@ -288,13 +296,11 @@ class OWDetector(WiseWidget):
                                     log_x=False,
                                     log_y=False)
 
-                    #time.sleep(0.1)
+                    time.sleep(0.1)
 
                     self.tabs.setCurrentIndex(1)
                 else:
                     self.progressBarSet(value=i*progress_bar_increment)
-
-                self.best_focus_slider.setValue(i+1)
 
                 if propagation_output.HEW < hew_min:
                     hew_min = propagation_output.HEW
@@ -342,7 +348,7 @@ class OWDetector(WiseWidget):
 
     def plot_detail(self, value):
         try:
-            index = value - 1
+            index = value
             n_defocus = len(self.positions_list)
 
             electric_fields = self.electric_fields_list[index]
