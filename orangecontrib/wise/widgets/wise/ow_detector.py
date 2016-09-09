@@ -1,7 +1,7 @@
 import numpy
 import time
-from PyQt4.QtGui import QApplication, QPalette, QColor, QFont, QMessageBox, QFileDialog
-
+from PyQt4.QtGui import QApplication, QPalette, QColor, QFont, QMessageBox, QFileDialog, QSlider
+from PyQt4.QtCore import QRect, Qt
 from orangewidget import gui
 from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui
@@ -36,6 +36,7 @@ class OWDetector(WiseWidget):
     show_animation = Setting(0)
 
     input_data = None
+
 
     def set_input(self, input_data):
         self.setStatusMessage("")
@@ -113,6 +114,7 @@ class OWDetector(WiseWidget):
         self.save_button = gui.button(best_focus_box, self, "Save Best Focus Calculation Complete Results", callback=self.save_best_focus_results, height=35)
         self.save_button.setEnabled(False)
 
+        self.best_focus_slider = None
 
     def set_Multipool(self):
         self.use_multipool_box.setVisible(self.use_multipool == 1)
@@ -198,6 +200,18 @@ class OWDetector(WiseWidget):
             self.defocus_step = congruence.checkStrictlyPositiveNumber(self. defocus_step, "Defocus sweep step")
             if self.defocus_step >= self.defocus_stop - self.defocus_start: raise Exception("Defocus step is too big")
 
+            if self.best_focus_slider is None:
+                self.best_focus_slider = QSlider(self.tab[1])
+                self.best_focus_slider.setGeometry(QRect(120, 380, 321, 31))
+                self.best_focus_slider.setOrientation(Qt.Horizontal)
+                self.best_focus_slider.setInvertedAppearance(False)
+                self.best_focus_slider.setInvertedControls(False)
+
+                self.tab[1].layout().addWidget(self.best_focus_slider)
+            else:
+                self.best_focus_slider.valueChanged.disconnect()
+
+
             self.setStatusMessage("")
             self.progressBarInit()
 
@@ -211,6 +225,12 @@ class OWDetector(WiseWidget):
                                             self.defocus_step * self.workspace_units_to_m)
                 n_defocus = len(self.defocus_list)
 
+                self.best_focus_slider.setTickInterval(1)
+                self.best_focus_slider.setSingleStep(1)
+                self.best_focus_slider.setMinimum(0)
+                self.best_focus_slider.setMaximum(n_defocus)
+                self.best_focus_slider.setValue(0)
+
                 progress_bar_increment = 100/n_defocus
 
                 if self.use_multipool == 0:
@@ -220,6 +240,8 @@ class OWDetector(WiseWidget):
 
                 index_min = -1
                 hew_min = numpy.inf
+
+                self.best_focus_index = -1
                 self.electric_fields_list = []
                 self.positions_list = []
                 self.hews_list = []
@@ -235,7 +257,10 @@ class OWDetector(WiseWidget):
                 if self.show_animation == 1: time.sleep(0.5)
 
                 for i, defocus in enumerate(self.defocus_list):
-                    if numpy.abs(defocus) < 1e-15: defocus = 0.0
+                    if numpy.abs(defocus) < 1e-15:
+                        defocus = 0.0
+                        self.defocus_list[i] = 0.0
+
 
                     propagation_parameter.defocus_sweep = defocus
 
@@ -252,7 +277,7 @@ class OWDetector(WiseWidget):
                                         i*progress_bar_increment,
                                         tabs_canvas_index=1,
                                         plot_canvas_index=1,
-                                        title="(" + str(i+1) + "/" + str(n_defocus) + ") Intensity at Defocus Sweep: " + str(defocus/self.workspace_units_to_m) + ", HEW: " + str(round(propagation_output.HEW, 5)),
+                                        title="Defocus Sweep: " + str(defocus/self.workspace_units_to_m) + " (" + str(i+1) + "/" + str(n_defocus) + "), HEW: " + str(round(propagation_output.HEW, 5)),
                                         xtitle="Z [$\mu$m]",
                                         ytitle="Intensity",
                                         log_x=False,
@@ -264,11 +289,13 @@ class OWDetector(WiseWidget):
                     else:
                         self.progressBarSet(value=i*progress_bar_increment)
 
+                    self.best_focus_slider.setValue(i+1)
+
                     if propagation_output.HEW < hew_min:
                         hew_min = propagation_output.HEW
                         index_min = i
 
-
+                self.best_focus_index = index_min
                 best_focus_electric_fields = self.electric_fields_list[index_min]
                 best_focus_positions       = self.positions_list[index_min]
 
@@ -284,11 +311,14 @@ class OWDetector(WiseWidget):
                                 100,
                                 tabs_canvas_index=1,
                                 plot_canvas_index=1,
-                                title="Intensity at Best Focus Position: " + str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) + ", HEW: " + str(round(self.hews_list[index_min], 5)),
+                                title="(BEST FOCUS) Defocus Sweep: " + str(self.defocus_list[index_min]/self.workspace_units_to_m) + " ("+ str(index_min+1) + "/" + str(n_defocus) + "), Position: " + str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) + ", HEW: " + str(round(self.hews_list[index_min], 5)),
                                 xtitle="Z [$\mu$m]",
                                 ytitle="Intensity",
                                 log_x=False,
                                 log_y=False)
+
+                self.best_focus_slider.setValue(index_min)
+                self.best_focus_slider.valueChanged.connect(self.plot_detail)
 
                 self.tabs.setCurrentIndex(1)
                 self.setStatusMessage("")
@@ -304,6 +334,34 @@ class OWDetector(WiseWidget):
 
 
         self.progressBarFinished()
+
+
+    def plot_detail(self, value):
+        index = value - 1
+        n_defocus = len(self.positions_list)
+
+        electric_fields = self.electric_fields_list[index]
+        positions       = self.positions_list[index]
+
+        if index == self.best_focus_index:
+            title = "(BEST FOCUS) Defocus Sweep: " + str(self.defocus_list[index]/self.workspace_units_to_m) + " ("+ str(index+1) + "/" + str(n_defocus) + "), Position: " + str(self.oe_f2 + (self.defocus_list[index]/self.workspace_units_to_m)) + ", HEW: " + str(round(self.hews_list[index], 5))
+        else:
+            title = "Defocus Sweep: " + str(self.defocus_list[index]/self.workspace_units_to_m) + " (" + str(index+1) + "/" + str(n_defocus) + "), HEW: " + str(round(self.hews_list[index], 5))
+
+
+        self.plot_histo(positions * 1e6,
+                        Amp(electric_fields)**2,
+                        100,
+                        tabs_canvas_index=1,
+                        plot_canvas_index=1,
+                        title=title,
+                        xtitle="Z [$\mu$m]",
+                        ytitle="Intensity",
+                        log_x=False,
+                        log_y=False)
+
+
+        self.tabs.setCurrentIndex(1)
 
     def save_best_focus_results(self):
         try:
