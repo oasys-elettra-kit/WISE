@@ -28,9 +28,9 @@ class OWDetector(WiseWidget):
     detector_size = 0.0
     oe_f2 = 0.0
     defocus_sweep = Setting(0.0)
-    defocus_start = Setting(-10e-3)
-    defocus_stop = Setting(10e-3)
-    defocus_step = Setting(1e-3)
+    defocus_start = Setting(-1.0)
+    defocus_stop = Setting(1.0)
+    defocus_step = Setting(0.1)
     use_multipool = Setting(0)
     n_pools = Setting(5)
     show_animation = Setting(0)

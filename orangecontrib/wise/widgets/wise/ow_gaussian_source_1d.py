@@ -20,8 +20,8 @@ class OWGaussianSource1d(WiseWidget):
     category = ""
     keywords = ["wise", "gaussian"]
 
-    source_lambda = Setting(10e-9)
-    source_sigma =  Setting(125e-6)
+    source_lambda = Setting(10)
+    source_sigma =  Setting(125e-3)
     source_position = Setting(0)
 
     z_origin = Setting(0.0)

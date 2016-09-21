@@ -27,10 +27,10 @@ class OWEllipticalMirror(WiseWidget):
 
     inputs = [("Input", WiseOutput, "set_input"), ("PreInput", WisePreInputData, "set_pre_input")]
 
-    f1 = Setting(98)
-    f2 = Setting(1.2)
+    f1 = Setting(98000)
+    f2 = Setting(1200)
     alpha = Setting(2)
-    length = Setting(0.4)
+    length = Setting(400)
     use_figure_error = Setting(0)
     figure_error_file = Setting("figure_error.dat")
     figure_error_step = Setting(0.002)
