@@ -265,11 +265,7 @@ class OWEllipticalMirror(WiseWidget):
         data_to_plot[2, :] = Cyc(mir_E)
 
         if len(elliptic_mirror.FigureErrors) > 0:
-            figure_error_x = numpy.arange(0, self.length, elliptic_mirror.FigureErrorSteps[0])
-
-            if len(figure_error_x) == len(elliptic_mirror.FigureErrors[0])-1:
-                figure_error_x = numpy.append(figure_error_x, figure_error_x[-1] + elliptic_mirror.FigureErrorSteps[0])
-
+            figure_error_x = numpy.linspace(0, self.length, len(elliptic_mirror.FigureErrors[0]))
             data_to_plot_2 = numpy.zeros((2, len(figure_error_x)))
 
             data_to_plot_2[0, :] = figure_error_x

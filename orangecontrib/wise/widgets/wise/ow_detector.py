@@ -68,14 +68,15 @@ class OWDetector(WiseWidget):
         main_box = oasysgui.widgetBox(self.controlArea, "Detector Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
 
 
+        oasysgui.lineEdit(main_box, self, "detector_size", "Detector Size [" + u"\u03BC" + "m]", labelWidth=260, valueType=float, orientation="horizontal")
+
+        gui.separator(main_box)
+
         gui.comboBox(main_box, self, "calculation_type", label="Numeric Integration",
                      items=["Automatic Number of Points", "User Defined Number of Points"], labelWidth=160,
                      callback=self.set_CalculationType, sendSelectedValue=False, orientation="horizontal")
 
-
-        self.detector_box = oasysgui.widgetBox(main_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-25, height=50)
-
-        oasysgui.lineEdit(self.detector_box, self, "detector_size", "Detector Size [" + u"\u03BC" + "m]", labelWidth=260, valueType=float, orientation="horizontal")
+        self.detector_box = oasysgui.widgetBox(main_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-25, height=30)
 
         le_calculated_number_of_points = oasysgui.lineEdit(self.detector_box, self, "calculated_number_of_points", "Calculated Number of Points", labelWidth=260, valueType=float, orientation="horizontal")
         le_calculated_number_of_points.setReadOnly(True)
@@ -87,7 +88,7 @@ class OWDetector(WiseWidget):
         palette.setColor(QPalette.Base, QColor(243, 240, 160))
         le_calculated_number_of_points.setPalette(palette)
 
-        self.number_box = oasysgui.widgetBox(main_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-25, height=50)
+        self.number_box = oasysgui.widgetBox(main_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-25, height=30)
 
         oasysgui.lineEdit(self.number_box, self, "number_of_points", "Number of Points", labelWidth=260, valueType=int, orientation="horizontal")
 
@@ -140,7 +141,7 @@ class OWDetector(WiseWidget):
                      items=["No", "Yes"], labelWidth=260,
                      callback=self.set_Multipool, sendSelectedValue=False, orientation="horizontal")
 
-        self.use_multipool_box = oasysgui.widgetBox(parallel_box, "", addSpace=True, orientation="vertical", height=30, width=self.CONTROL_AREA_WIDTH-5)
+        self.use_multipool_box = oasysgui.widgetBox(parallel_box, "", addSpace=True, orientation="vertical", height=30, width=self.CONTROL_AREA_WIDTH-25)
         self.use_multipool_box_empty = oasysgui.widgetBox(parallel_box, "", addSpace=True, orientation="vertical", height=30, width=self.CONTROL_AREA_WIDTH-25)
 
         oasysgui.lineEdit(self.use_multipool_box, self, "n_pools", "Nr. Parallel Processes", labelWidth=260, valueType=int, orientation="horizontal")
@@ -175,9 +176,9 @@ class OWDetector(WiseWidget):
 
 
     def check_fields(self):
-        if self.calculation_type == 0: #auto
-            self.detector_size = congruence.checkStrictlyPositiveNumber(self.detector_size, "Detector Size")
-        else:
+        self.detector_size = congruence.checkStrictlyPositiveNumber(self.detector_size, "Detector Size")
+
+        if self.calculation_type == 1: #auto
             self.number_of_points = congruence.checkStrictlyPositiveNumber(self.number_of_points, "Number of Points")
 
         if self.oe_f2 + self.defocus_sweep <= 0: raise Exception("Defocus sweep reached the previous mirror")
@@ -189,11 +190,11 @@ class OWDetector(WiseWidget):
         if self.input_data is None:
             raise Exception("No Input Data!")
 
+        detector_size = self.detector_size*1e-6
+
         if self.calculation_type == 0:
-            detector_size = self.detector_size*1e-6
             number_of_points = -1
         else:
-            detector_size = 0.0
             number_of_points = self.number_of_points
 
         propagation_parameter = WisePropagationParameters(propagation_type=WisePropagationParameters.DETECTOR_SURFACE,
@@ -274,11 +275,11 @@ class OWDetector(WiseWidget):
             source =  self.input_data.get_source().inner_wise_source
             elliptic_mirror = self.input_data.get_optical_element().inner_wise_optical_element
 
+            detector_size = self.detector_size*1e-6
+
             if self.calculation_type == 0:
-                detector_size = self.detector_size*1e-6
                 number_of_points = -1
             else:
-                detector_size = 0.0
                 number_of_points = self.number_of_points
 
             self.defocus_list = numpy.arange(self.defocus_start * self.workspace_units_to_m,
