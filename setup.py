@@ -5,7 +5,7 @@ import os
 from setuptools import find_packages, setup
 
 NAME = 'OASYS-WISE'
-VERSION = '1.0.12'
+VERSION = '1.0.13'
 ISRELEASED = True
 
 DESCRIPTION = 'WISE in Python'

@@ -1,6 +1,6 @@
 import sys
 import numpy
-from PyQt4.QtGui import QApplication
+from scipy.stats import norm
 from orangewidget import gui
 from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui
@@ -82,13 +82,16 @@ class OWGaussianSource1d(WiseWidget):
 
         data_to_plot = numpy.zeros((2, 100))
 
-        data_to_plot[0, :] = self.z_origin + (-5*self.source_sigma) + numpy.arange(100)*(self.source_sigma*0.1)
-        data_to_plot[1, :] = numpy.exp(-0.5*(((data_to_plot[0, :]-self.z_origin)/self.source_sigma)**2))/(self.source_sigma*numpy.sqrt(2*numpy.pi))
+        sigma = self.source_sigma
+        mu = self.z_origin
+
+        data_to_plot[0, :] = numpy.linspace((-5*sigma) + mu, mu + (5*sigma), 100)
+        data_to_plot[1, :] = (norm.pdf(data_to_plot[0, :], mu, sigma))**2
 
         return wise_inner_source, data_to_plot
 
     def getTitles(self):
-        return ["Gaussian Source Shape"]
+        return ["Gaussian Source Intensity"]
 
     def getXTitles(self):
         return ["Z [" + self.workspace_units_label + "]"]

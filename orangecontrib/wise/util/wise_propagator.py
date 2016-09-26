@@ -18,33 +18,12 @@ def synchronized_method(method):
     return sync_method
 
 class Singleton:
-    """
-    A non-thread-safe helper class to ease implementing singletons.
-    This should be used as a decorator -- not a metaclass -- to the
-    class that should be a singleton.
-
-    The decorated class can define one `__init__` function that
-    takes only the `self` argument. Other than that, there are
-    no restrictions that apply to the decorated class.
-
-    To get the singleton instance, use the `Instance` method. Trying
-    to use `__call__` will result in a `TypeError` being raised.
-
-    Limitations: The decorated class cannot be inherited from.
-
-    """
 
     def __init__(self, decorated):
         self._decorated = decorated
 
     @synchronized_method
     def Instance(self):
-        """
-        Returns the singleton instance. Upon its first call, it creates a
-        new instance of the decorated class and calls its `__init__` method.
-        On all subsequent calls, the already created instance is returned.
-
-        """
         try:
             return self._instance
         except AttributeError:
@@ -81,14 +60,21 @@ class WisePropagationAlgorithms:
     HuygensIntegral = "HuygensIntegral"
 
 class WisePropagationParameters(object):
+    MIRROR_SURFACE = 0
+    DETECTOR_SURFACE = 1
+
     def __init__(self,
+                 propagation_type = MIRROR_SURFACE,
                  source = None,
                  optical_element = None,
+                 number_of_points = 0,
                  detector_size = 0.0,
                  defocus_sweep = 0.0,
                  n_pools = 0):
+        self.propagation_type = propagation_type
         self.optical_element = optical_element
         self.source = source
+        self.number_of_points = number_of_points
         self.detector_size = detector_size
         self.defocus_sweep = defocus_sweep
         self.n_pools = n_pools
@@ -115,9 +101,10 @@ import numpy
 import wiselib.Rayman5 as Rayman
 
 class HuygensIntegralPropagationOutput(object):
-    def __init__(self, mir_s, mir_E, det_s, electric_fields, HEW):
+    def __init__(self, mir_s, mir_E, n_auto, det_s, electric_fields, HEW):
         self.mir_s = mir_s
         self.mir_E = mir_E
+        self.n_auto = n_auto
         self.det_s = det_s
         self.electric_fields = electric_fields
         self.HEW = HEW
@@ -135,38 +122,53 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
         theta_1 = numpy.arctan(-1/elliptic_mirror.p2[0])
         det_size = parameters.detector_size
 
-        n_auto = Rayman.SamplingCalculator(source.Lambda,
-                                           elliptic_mirror.f2,
-                                           elliptic_mirror.L,
-                                           det_size,
-                                           theta_0,
-                                           theta_1)
+        if parameters.number_of_points <=0:
+            n_auto = Rayman.SamplingCalculator(source.Lambda,
+                                               elliptic_mirror.f2,
+                                               elliptic_mirror.L,
+                                               det_size,
+                                               theta_0,
+                                               theta_1)
+            number_of_points = n_auto
+        else:
+            number_of_points = parameters.number_of_points
+
 
         # Piano specchio (Sorgente=>Specchio)
-        mir_x, mir_y = elliptic_mirror.GetXY_MeasuredMirror(n_auto, 0)
+        mir_x, mir_y = elliptic_mirror.GetXY_MeasuredMirror(number_of_points, 0)
         mir_s = Rayman.xy_to_s(mir_x, mir_y)
         mir_E = source.EvalField_XYLab(mir_x, mir_y)
-        # wave front at F2
-        det_x, det_y = elliptic_mirror.GetXY_TransversePlaneAtF2(det_size, n_auto, parameters.defocus_sweep)
-        det_s = Rayman.xy_to_s(det_x, det_y)
 
-        electric_fields = Rayman.HuygensIntegral_1d_MultiPool(source.Lambda,
-                                                              mir_E,
-                                                              mir_x,
-                                                              mir_y,
-                                                              det_x,
-                                                              det_y,
-                                                              parameters.n_pools)
+        if parameters.propagation_type == WisePropagationParameters.DETECTOR_SURFACE:
+            # wave front at F2
+            det_x, det_y = elliptic_mirror.GetXY_TransversePlaneAtF2(det_size, number_of_points, parameters.defocus_sweep)
+            det_s = Rayman.xy_to_s(det_x, det_y)
 
-        hew = Rayman.HalfEnergyWidth_1d(abs(electric_fields)**2, Step = numpy.sqrt((det_x[0] - det_x[-1])**2 + (det_y[0] - det_y[-1])**2))
+            electric_fields = Rayman.HuygensIntegral_1d_MultiPool(source.Lambda,
+                                                                  mir_E,
+                                                                  mir_x,
+                                                                  mir_y,
+                                                                  det_x,
+                                                                  det_y,
+                                                                  parameters.n_pools)
+
+            hew = Rayman.HalfEnergyWidth_1d(abs(electric_fields)**2, Step = numpy.sqrt((det_x[0] - det_x[-1])**2 + (det_y[0] - det_y[-1])**2))
 
 
 
-        return HuygensIntegralPropagationOutput(mir_s,
-                                                mir_E,
-                                                det_s,
-                                                electric_fields,
-                                                hew)
+            return HuygensIntegralPropagationOutput(mir_s,
+                                                    mir_E,
+                                                    number_of_points,
+                                                    det_s,
+                                                    electric_fields,
+                                                    hew)
+        else:
+            return HuygensIntegralPropagationOutput(mir_s,
+                                                    mir_E,
+                                                    number_of_points,
+                                                    None,
+                                                    None,
+                                                    None)
 
 if __name__ == "__main__":
 

@@ -25,7 +25,10 @@ class OWDetector(WiseWidget):
     inputs = [("Input", WiseOutput, "set_input")]
     outputs = []
 
-    detector_size = 0.0
+    calculation_type = Setting(0)
+    number_of_points = Setting(0)
+    detector_size = Setting(50)
+    calculated_number_of_points = 0
     oe_f2 = 0.0
     defocus_sweep = Setting(0.0)
     defocus_start = Setting(-1.0)
@@ -36,6 +39,7 @@ class OWDetector(WiseWidget):
     show_animation = Setting(0)
 
     input_data = None
+    run_calculation = True
 
 
     def set_input(self, input_data):
@@ -63,15 +67,31 @@ class OWDetector(WiseWidget):
 
         main_box = oasysgui.widgetBox(self.controlArea, "Detector Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
 
-        le_detector_size = oasysgui.lineEdit(main_box, self, "detector_size", "detector_size [" + u"\u03BC" + "m]", labelWidth=260, valueType=float, orientation="horizontal")
-        le_detector_size.setReadOnly(True)
-        font = QFont(le_detector_size.font())
+
+        gui.comboBox(main_box, self, "calculation_type", label="Numeric Integration",
+                     items=["Automatic Number of Points", "User Defined Number of Points"], labelWidth=160,
+                     callback=self.set_CalculationType, sendSelectedValue=False, orientation="horizontal")
+
+
+        self.detector_box = oasysgui.widgetBox(main_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-25, height=50)
+
+        oasysgui.lineEdit(self.detector_box, self, "detector_size", "Detector Size [" + u"\u03BC" + "m]", labelWidth=260, valueType=float, orientation="horizontal")
+
+        le_calculated_number_of_points = oasysgui.lineEdit(self.detector_box, self, "calculated_number_of_points", "Calculated Number of Points", labelWidth=260, valueType=float, orientation="horizontal")
+        le_calculated_number_of_points.setReadOnly(True)
+        font = QFont(le_calculated_number_of_points.font())
         font.setBold(True)
-        le_detector_size.setFont(font)
-        palette = QPalette(le_detector_size.palette())
+        le_calculated_number_of_points.setFont(font)
+        palette = QPalette(le_calculated_number_of_points.palette())
         palette.setColor(QPalette.Text, QColor('dark blue'))
         palette.setColor(QPalette.Base, QColor(243, 240, 160))
-        le_detector_size.setPalette(palette)
+        le_calculated_number_of_points.setPalette(palette)
+
+        self.number_box = oasysgui.widgetBox(main_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-25, height=50)
+
+        oasysgui.lineEdit(self.number_box, self, "number_of_points", "Number of Points", labelWidth=260, valueType=int, orientation="horizontal")
+
+        self.set_CalculationType()
 
         self.le_oe_f2 = oasysgui.lineEdit(main_box, self, "oe_f2", "O.E. F2", labelWidth=260, valueType=float, orientation="horizontal")
         self.le_oe_f2.setReadOnly(True)
@@ -85,7 +105,7 @@ class OWDetector(WiseWidget):
 
         self.le_defocus_sweep = oasysgui.lineEdit(main_box, self, "defocus_sweep", "Defocus sweep", labelWidth=260, valueType=float, orientation="horizontal")
 
-        gui.button(main_box, self, "Move Detector on Defocused Position", callback=self.compute, height=35)
+        gui.button(main_box, self, "Compute", callback=self.compute, height=35)
 
         best_focus_box = oasysgui.widgetBox(self.controlArea, "Best Focus Calculation", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
 
@@ -93,32 +113,50 @@ class OWDetector(WiseWidget):
         self.le_defocus_stop  = oasysgui.lineEdit(best_focus_box, self, "defocus_stop", "Defocus sweep stop", labelWidth=260, valueType=float, orientation="horizontal")
         self.le_defocus_step  = oasysgui.lineEdit(best_focus_box, self, "defocus_step", "Defocus sweep step", labelWidth=260, valueType=float, orientation="horizontal")
 
-        gui.comboBox(best_focus_box, self, "use_multipool", label="Use Parallel Processing",
-                     items=["No", "Yes"], labelWidth=260,
-                     callback=self.set_Multipool, sendSelectedValue=False, orientation="horizontal")
-
-        self.use_multipool_box = oasysgui.widgetBox(best_focus_box, "", addSpace=True, orientation="vertical", height=30)
-        self.use_multipool_box_empty = oasysgui.widgetBox(best_focus_box, "", addSpace=True, orientation="vertical", height=30)
-
-        oasysgui.lineEdit(self.use_multipool_box, self, "n_pools", "Nr. Parallel Processes", labelWidth=260, valueType=int, orientation="horizontal")
-
-        self.set_Multipool()
-
         gui.separator(best_focus_box, height=5)
 
         gui.checkBox(best_focus_box, self, "show_animation", "Show animation during calculation")
 
         gui.separator(best_focus_box, height=5)
 
-        gui.button(best_focus_box, self, "Find Best Focus Position", callback=self.do_best_focus_calculation, height=35)
+
+        button_box = oasysgui.widgetBox(best_focus_box, "", orientation="horizontal", width=self.CONTROL_AREA_WIDTH-25)
+
+        gui.button(button_box, self, "Find Best Focus Position", callback=self.do_best_focus_calculation, height=35)
+        stop_button = gui.button(button_box, self, "Interrupt", callback=self.stop_best_focus_calculation, height=35)
+        font = QFont(stop_button.font())
+        font.setBold(True)
+        stop_button.setFont(font)
+        palette = QPalette(stop_button.palette()) # make a copy of the palette
+        palette.setColor(QPalette.ButtonText, QColor('red'))
+        stop_button.setPalette(palette) # assign new palette
+
         self.save_button = gui.button(best_focus_box, self, "Save Best Focus Calculation Complete Results", callback=self.save_best_focus_results, height=35)
         self.save_button.setEnabled(False)
 
+        parallel_box = oasysgui.widgetBox(self.controlArea, "Parallel Computing", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
+
+        gui.comboBox(parallel_box, self, "use_multipool", label="Use Parallel Processing",
+                     items=["No", "Yes"], labelWidth=260,
+                     callback=self.set_Multipool, sendSelectedValue=False, orientation="horizontal")
+
+        self.use_multipool_box = oasysgui.widgetBox(parallel_box, "", addSpace=True, orientation="vertical", height=30, width=self.CONTROL_AREA_WIDTH-5)
+        self.use_multipool_box_empty = oasysgui.widgetBox(parallel_box, "", addSpace=True, orientation="vertical", height=30, width=self.CONTROL_AREA_WIDTH-25)
+
+        oasysgui.lineEdit(self.use_multipool_box, self, "n_pools", "Nr. Parallel Processes", labelWidth=260, valueType=int, orientation="horizontal")
+
+        self.set_Multipool()
+
         self.best_focus_slider = None
+
+    def set_CalculationType(self):
+        self.detector_box.setVisible(self.calculation_type==0)
+        self.number_box.setVisible(self.calculation_type==1)
 
     def set_Multipool(self):
         self.use_multipool_box.setVisible(self.use_multipool == 1)
         self.use_multipool_box_empty.setVisible(self.use_multipool == 0)
+
 
     def set_ViewType(self):
         self.view_type = 1
@@ -137,6 +175,13 @@ class OWDetector(WiseWidget):
 
 
     def check_fields(self):
+        if self.calculation_type == 0: #auto
+            self.detector_size = congruence.checkStrictlyPositiveNumber(self.detector_size, "Detector Size")
+        else:
+            self.number_of_points = congruence.checkStrictlyPositiveNumber(self.number_of_points, "Number of Points")
+
+        if self.oe_f2 + self.defocus_sweep <= 0: raise Exception("Defocus sweep reached the previous mirror")
+
         if self.use_multipool == 1:
             self.n_pools = congruence.checkStrictlyPositiveNumber(self.n_pools, "Nr. Parallel Processes")
 
@@ -144,37 +189,39 @@ class OWDetector(WiseWidget):
         if self.input_data is None:
             raise Exception("No Input Data!")
 
-        if self.defocus_sweep == 0.0:
-            wavefront = self.input_data.get_wavefront()
-
-            data_to_plot = numpy.zeros((2, len(wavefront.positions)))
-            data_to_plot[0, :] = wavefront.positions * 1e6
-            data_to_plot[1, :] = Amp(wavefront.electric_fields)**2
+        if self.calculation_type == 0:
+            detector_size = self.detector_size*1e-6
+            number_of_points = -1
         else:
-            if self.oe_f2 + self.defocus_sweep <= 0: raise Exception("Defocus sweep reached the previous mirror")
+            detector_size = 0.0
+            number_of_points = self.number_of_points
 
+        propagation_parameter = WisePropagationParameters(propagation_type=WisePropagationParameters.DETECTOR_SURFACE,
+                                                          source=self.input_data.get_source().inner_wise_source,
+                                                          optical_element=self.input_data.get_optical_element().inner_wise_optical_element,
+                                                          number_of_points=number_of_points,
+                                                          detector_size=detector_size,
+                                                          defocus_sweep=self.defocus_sweep * self.workspace_units_to_m)
 
-            propagation_parameter = WisePropagationParameters(source=self.input_data.get_source().inner_wise_source,
-                                                              optical_element=self.input_data.get_optical_element().inner_wise_optical_element,
-                                                              detector_size=self.input_data.get_optical_element().get_property("detector_size"),
-                                                              defocus_sweep=self.defocus_sweep * self.workspace_units_to_m)
+        propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
+                                                                            WisePropagationAlgorithms.HuygensIntegral)
 
+        if self.calculation_type == 0:
+            self.calculated_number_of_points = propagation_output.n_auto
+        else:
+            self.calculated_number_of_points = 0
 
-            propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
-                                                                                WisePropagationAlgorithms.HuygensIntegral)
+        positions = propagation_output.det_s
+        electric_fields = propagation_output.electric_fields
 
-
-            positions = propagation_output.det_s
-            electric_fields = propagation_output.electric_fields
-
-            data_to_plot = numpy.zeros((5, len(positions)))
-            data_to_plot[0, :] = positions * 1e6
-            data_to_plot[1, :] = Amp(electric_fields)**2
+        data_to_plot = numpy.zeros((5, len(positions)))
+        data_to_plot[0, :] = positions * 1e6
+        data_to_plot[1, :] = Amp(electric_fields)**2
 
         return data_to_plot
 
     def getTabTitles(self):
-        return ["Intensity on O.E. Focus", "Intensity on Best Focus"]
+        return ["Intensity on O.E. Focus", "Intensity on Best Focus", "Hew"]
 
     def getTitles(self):
         return ["Intensity on Focus Position: " + str(numpy.round(self.oe_f2 + self.defocus_sweep, 6))]
@@ -196,6 +243,9 @@ class OWDetector(WiseWidget):
 
     def extract_wise_output_from_calculation_output(self, calculation_output):
         return None
+
+    def stop_best_focus_calculation(self):
+        self.run_calculation = False
 
     def do_best_focus_calculation(self):
         try:
@@ -223,7 +273,13 @@ class OWDetector(WiseWidget):
 
             source =  self.input_data.get_source().inner_wise_source
             elliptic_mirror = self.input_data.get_optical_element().inner_wise_optical_element
-            detector_size = self.input_data.get_optical_element().get_property("detector_size")
+
+            if self.calculation_type == 0:
+                detector_size = self.detector_size*1e-6
+                number_of_points = -1
+            else:
+                detector_size = 0.0
+                number_of_points = self.number_of_points
 
             self.defocus_list = numpy.arange(self.defocus_start * self.workspace_units_to_m,
                                              self.defocus_stop  * self.workspace_units_to_m,
@@ -257,21 +313,26 @@ class OWDetector(WiseWidget):
             self.positions_list = []
             self.hews_list = []
 
-            propagation_parameter = WisePropagationParameters(source=source,
+            propagation_parameter = WisePropagationParameters(propagation_type=WisePropagationParameters.DETECTOR_SURFACE,
+                                                              source=source,
                                                               optical_element=elliptic_mirror,
+                                                              number_of_points=number_of_points,
                                                               detector_size=detector_size,
                                                               n_pools=n_pools)
 
 
             self.setStatusMessage("Calculating Best Focus Position")
 
-            if self.show_animation == 1: time.sleep(0.5)
+            self.run_calculation = True
 
             for i, defocus in enumerate(self.defocus_list):
+                if not self.run_calculation:
+                    if not self.best_focus_slider is None: self.best_focus_slider.valueChanged.connect(self.plot_detail)
+                    return
+
                 if numpy.abs(defocus) < 1e-15:
                     defocus = 0.0
                     self.defocus_list[i] = 0.0
-
 
                 propagation_parameter.defocus_sweep = defocus
 
@@ -295,8 +356,6 @@ class OWDetector(WiseWidget):
                                     ytitle="Intensity",
                                     log_x=False,
                                     log_y=False)
-
-                    time.sleep(0.1)
 
                     self.tabs.setCurrentIndex(1)
                 else:
@@ -328,8 +387,18 @@ class OWDetector(WiseWidget):
                             log_x=False,
                             log_y=False)
 
+            self.plot_histo(self.defocus_list,
+                            self.hews_list,
+                            100,
+                            tabs_canvas_index=2,
+                            plot_canvas_index=2,
+                            title="HEW vs Defocus Sweep",
+                            xtitle="Defocus [" + self.workspace_units_label + "]",
+                            ytitle="HEW",
+                            log_x=False,
+                            log_y=False)
+
             self.best_focus_slider.setValue(index_min)
-            self.best_focus_slider.valueChanged.connect(self.plot_detail)
 
             self.tabs.setCurrentIndex(1)
             self.setStatusMessage("")
@@ -337,12 +406,15 @@ class OWDetector(WiseWidget):
             self.save_button.setEnabled(True)
 
         except Exception as exception:
+            self.best_focus_slider.valueChanged.connect(self.plot_detail)
+
             QMessageBox.critical(self, "Error", str(exception), QMessageBox.Ok)
 
             self.setStatusMessage("Error!")
 
             #raise exception
 
+        if not self.best_focus_slider is None: self.best_focus_slider.valueChanged.connect(self.plot_detail)
         self.progressBarFinished()
 
 

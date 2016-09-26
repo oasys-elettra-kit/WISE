@@ -1,6 +1,6 @@
 import sys
 import numpy
-from PyQt4.QtGui import QApplication, QMessageBox
+from PyQt4.QtGui import QApplication, QPalette, QColor, QFont, QMessageBox
 from orangewidget import gui
 from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui
@@ -40,7 +40,10 @@ class OWEllipticalMirror(WiseWidget):
     roughness_x_scaling = Setting(1.0)
     roughness_y_scaling = Setting(1.0)
     roughness_fit_data = Setting(0)
+    calculation_type = Setting(0)
+    number_of_points = Setting(0)
     detector_size = Setting(50)
+    calculated_number_of_points = 0
 
     input_data = None
 
@@ -54,7 +57,6 @@ class OWEllipticalMirror(WiseWidget):
                 self.setStatusMessage("Error!")
 
             self.input_data = input_data
-
 
     def set_pre_input(self, data):
         if data is not None:
@@ -82,14 +84,15 @@ class OWEllipticalMirror(WiseWidget):
         oasysgui.lineEdit(main_box, self, "alpha", "Incidence Angle [deg]", labelWidth=260, valueType=float, orientation="horizontal")
         self.le_length = oasysgui.lineEdit(main_box, self, "length", "Length", labelWidth=260, valueType=float, orientation="horizontal")
 
-        gui.separator(main_box, height=5)
+        figure_error_box = oasysgui.widgetBox(self.controlArea, "Figure Error Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
 
-        gui.comboBox(main_box, self, "use_figure_error", label="Error Profile",
+
+        gui.comboBox(figure_error_box, self, "use_figure_error", label="Error Profile",
                      items=["None", "User Defined"], labelWidth=260,
                      callback=self.set_UseFigureError, sendSelectedValue=False, orientation="horizontal")
 
-        self.use_figure_error_box = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
-        self.use_figure_error_box_empty = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
+        self.use_figure_error_box = oasysgui.widgetBox(figure_error_box, "", addSpace=True, orientation="vertical", height=70)
+        self.use_figure_error_box_empty = oasysgui.widgetBox(figure_error_box, "", addSpace=True, orientation="vertical", height=70)
 
 
         file_box =  oasysgui.widgetBox(self.use_figure_error_box, "", addSpace=False, orientation="horizontal")
@@ -101,12 +104,12 @@ class OWEllipticalMirror(WiseWidget):
 
         self.set_UseFigureError()
 
-        gui.comboBox(main_box, self, "use_roughness", label="roughness",
+        gui.comboBox(figure_error_box, self, "use_roughness", label="roughness",
                      items=["None", "User Defined"], labelWidth=260,
                      callback=self.set_UseRoughness, sendSelectedValue=False, orientation="horizontal")
 
-        self.use_roughness_box = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=100)
-        self.use_roughness_box_empty = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=100)
+        self.use_roughness_box = oasysgui.widgetBox(figure_error_box, "", addSpace=True, orientation="vertical", height=100)
+        self.use_roughness_box_empty = oasysgui.widgetBox(figure_error_box, "", addSpace=True, orientation="vertical", height=100)
 
         file_box = oasysgui.widgetBox(self.use_roughness_box, "", addSpace=False, orientation="horizontal")
         self.le_roughness_file = oasysgui.lineEdit(file_box, self, "roughness_file", "File Name", labelWidth=100, valueType=str, orientation="horizontal")
@@ -120,9 +123,32 @@ class OWEllipticalMirror(WiseWidget):
 
         self.set_UseRoughness()
 
-        detector_box = oasysgui.widgetBox(self.controlArea, "Detector Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
+        calculation_box = oasysgui.widgetBox(self.controlArea, "Calculation Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
 
-        oasysgui.lineEdit(detector_box, self, "detector_size", "Detector Size [" + u"\u03BC" + "m]", labelWidth=260, valueType=float, orientation="horizontal")
+        gui.comboBox(calculation_box, self, "calculation_type", label="Numeric Integration",
+                     items=["Automatic Number of Points", "User Defined Number of Points"], labelWidth=160,
+                     callback=self.set_CalculationType, sendSelectedValue=False, orientation="horizontal")
+
+
+        self.detector_box = oasysgui.widgetBox(calculation_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-25)
+
+        oasysgui.lineEdit(self.detector_box, self, "detector_size", "(Hypotetic) Detector Size [" + u"\u03BC" + "m]", labelWidth=260, valueType=float, orientation="horizontal")
+
+        le_calculated_number_of_points = oasysgui.lineEdit(self.detector_box, self, "calculated_number_of_points", "Calculated Number of Points", labelWidth=260, valueType=float, orientation="horizontal")
+        le_calculated_number_of_points.setReadOnly(True)
+        font = QFont(le_calculated_number_of_points.font())
+        font.setBold(True)
+        le_calculated_number_of_points.setFont(font)
+        palette = QPalette(le_calculated_number_of_points.palette())
+        palette.setColor(QPalette.Text, QColor('dark blue'))
+        palette.setColor(QPalette.Base, QColor(243, 240, 160))
+        le_calculated_number_of_points.setPalette(palette)
+
+        self.number_box = oasysgui.widgetBox(calculation_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-25)
+
+        oasysgui.lineEdit(self.number_box, self, "number_of_points", "Number of Points", labelWidth=260, valueType=int, orientation="horizontal")
+
+        self.set_CalculationType()
 
     def selectFigureErrorFile(self):
         self.le_figure_error_file.setText(oasysgui.selectFileFromDialog(self, self.figure_error_file, "Select File", file_extension_filter="Data Files (*.dat *.txt)"))
@@ -137,6 +163,10 @@ class OWEllipticalMirror(WiseWidget):
     def set_UseRoughness(self):
         self.use_roughness_box.setVisible(self.use_roughness == 1)
         self.use_roughness_box_empty.setVisible(self.use_roughness == 0)
+
+    def set_CalculationType(self):
+        self.detector_box.setVisible(self.calculation_type==0)
+        self.number_box.setVisible(self.calculation_type==1)
 
     def after_change_workspace_units(self):
         label = self.le_f1.parent().layout().itemAt(0).widget()
@@ -159,6 +189,11 @@ class OWEllipticalMirror(WiseWidget):
 
         if self.use_roughness == 1:
             congruence.checkFileName(self.roughness_file)
+
+        if self.calculation_type == 0: #auto
+            self.detector_size = congruence.checkStrictlyPositiveNumber(self.detector_size, "Detector Size")
+        else:
+            self.number_of_points = congruence.checkStrictlyPositiveNumber(self.number_of_points, "Number of Points")
 
     def do_wise_calculation(self):
         if self.input_data is None:
@@ -196,12 +231,18 @@ class OWEllipticalMirror(WiseWidget):
                                                                      YOrigin = elliptic_mirror.XYF1[1],
                                                                      Theta = elliptic_mirror.p1_Angle)
 
+        if self.calculation_type == 0:
+            detector_size = self.detector_size*1e-6
+            number_of_points = -1
+        else:
+            detector_size = 0.0
+            number_of_points = self.number_of_points
 
-
-        propagation_parameter = WisePropagationParameters(source=wise_source.inner_wise_source,
+        propagation_parameter = WisePropagationParameters(propagation_type=WisePropagationParameters.MIRROR_SURFACE,
+                                                          source=wise_source.inner_wise_source,
                                                           optical_element=elliptic_mirror,
-                                                          detector_size=self.detector_size*1e-6)
-
+                                                          number_of_points=number_of_points,
+                                                          detector_size=detector_size)
 
         propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
                                                                             WisePropagationAlgorithms.HuygensIntegral)
@@ -209,47 +250,112 @@ class OWEllipticalMirror(WiseWidget):
 
         mir_E = propagation_output.mir_E
         mir_s = propagation_output.mir_s
-        det_s = propagation_output.det_s
-        electric_fields = propagation_output.electric_fields
+
+        if self.calculation_type == 0:
+            self.calculated_number_of_points = propagation_output.n_auto
+        else:
+            self.calculated_number_of_points = 0
 
         wise_optical_element = WiseOpticalElement(inner_wise_optical_element=elliptic_mirror)
         wise_optical_element.set_property("detector_size", self.detector_size*1e-6)
 
         data_to_plot = numpy.zeros((5, len(mir_s)))
         data_to_plot[0, :] = mir_s / self.workspace_units_to_m
-        data_to_plot[1, :] = Amp(mir_E)
+        data_to_plot[1, :] = Amp(mir_E)**2
         data_to_plot[2, :] = Cyc(mir_E)
-        data_to_plot[3, :] = det_s * 1e6
-        data_to_plot[4, :] = Amp(electric_fields)**2
 
-        return wise_source, \
-               wise_optical_element, \
-               Wavefront(electric_fields=electric_fields,
-                         positions=det_s), \
-               data_to_plot
+        if len(elliptic_mirror.FigureErrors) > 0:
+            figure_error_x = numpy.arange(0, self.length, elliptic_mirror.FigureErrorSteps[0])
+            figure_error_x = numpy.append(figure_error_x, figure_error_x[-1] + elliptic_mirror.FigureErrorSteps[0])
+
+            data_to_plot_2 = numpy.zeros((2, len(figure_error_x)))
+
+            data_to_plot_2[0, :] = figure_error_x
+            data_to_plot_2[1, :] = elliptic_mirror.FigureErrors[0]*1e9 # nm
+        else:
+            data_to_plot_2 = numpy.zeros((2, 1))
+
+            data_to_plot_2[0, :] = numpy.zeros(1)
+            data_to_plot_2[1, :] = numpy.zeros(1)
+
+        return wise_source, wise_optical_element, data_to_plot, data_to_plot_2
 
     def getTabTitles(self):
-        return ["|E0|: mirror", "Optical cycles", "Intensity on F2"]
+        return ["Field Intensity (mirror)", "Optical Cycles (mirror)", "Figure Error"]
 
     def getTitles(self):
-        return ["|E0|: mirror", "Optical cycles", "Intensity on F2"]
+        return ["Field Intensity (mirror)", "Optical Cycles (mirror)", "Figure Error"]
 
     def getXTitles(self):
         return ["rho [" + self.workspace_units_label + "]", "Z [" + self.workspace_units_label + "]", "Z [$\mu$m]"]
 
     def getYTitles(self):
-        return ["E0", "Optical Cycles", "Intensity"]
+        return ["|E0|**2", "Optical Cycles", "Height Error [nm]"]
 
     def getVariablesToPlot(self):
-        return [(0, 1), (0, 2), (3, 4)]
+        return [(0, 1), (0, 2), (0, 1)]
 
     def getLogPlot(self):
         return [(False, False), (False, False), (False, False)]
 
     def extract_plot_data_from_calculation_output(self, calculation_output):
-        return calculation_output[3]
+        return calculation_output[2], calculation_output[3]
+
+
+    def plot_results(self, plot_data, progressBarValue=80):
+        if not self.view_type == 0:
+            if not plot_data is None:
+
+                plot_data_1 = plot_data[0]
+                plot_data_2 = plot_data[1]
+
+                self.view_type_combo.setEnabled(False)
+
+                titles = self.getTitles()
+                xtitles = self.getXTitles()
+                ytitles = self.getYTitles()
+
+                progress_bar_step = (100-progressBarValue)/len(titles)
+
+                for index in range(0, len(titles)):
+                    x_index, y_index = self.getVariablesToPlot()[index]
+                    log_x, log_y = self.getLogPlot()[index]
+
+                    try:
+                        if index < 2:
+                            self.plot_histo(plot_data_1[x_index, :],
+                                            plot_data_1[y_index, :],
+                                            progressBarValue + ((index+1)*progress_bar_step),
+                                            tabs_canvas_index=index,
+                                            plot_canvas_index=index,
+                                            title=titles[index],
+                                            xtitle=xtitles[index],
+                                            ytitle=ytitles[index],
+                                            log_x=log_x,
+                                            log_y=log_y)
+                        else:
+                            self.plot_histo(plot_data_2[x_index, :],
+                                            plot_data_2[y_index, :],
+                                            progressBarValue + ((index+1)*progress_bar_step),
+                                            tabs_canvas_index=index,
+                                            plot_canvas_index=index,
+                                            title=titles[index],
+                                            xtitle=xtitles[index],
+                                            ytitle=ytitles[index],
+                                            log_x=log_x,
+                                            log_y=log_y)
+
+                        self.tabs.setCurrentIndex(index)
+                    except Exception as e:
+                        self.view_type_combo.setEnabled(True)
+
+                        raise Exception("Data not plottable: bad content\n" + str(e))
+
+                self.view_type_combo.setEnabled(True)
+            else:
+                raise Exception("Empty Data")
+
 
     def extract_wise_output_from_calculation_output(self, calculation_output):
         return WiseOutput(source=calculation_output[0],
-                          optical_element=calculation_output[1],
-                          wavefront=calculation_output[2])
+                          optical_element=calculation_output[1])
