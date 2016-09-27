@@ -1,13 +1,14 @@
+import sys
 import numpy
-import time
-from PyQt4.QtGui import QApplication, QPalette, QColor, QFont, QMessageBox, QFileDialog, QSlider
+from PyQt4.QtGui import QPalette, QColor, QFont, QMessageBox, QFileDialog, QSlider
 from PyQt4.QtCore import QRect, Qt
 from orangewidget import gui
 from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui
 from oasys.widgets import congruence
 
-from orangecontrib.wise.util.wise_objects import WiseOutput
+from orangecontrib.wise.util.wise_util import EmittingStream
+from orangecontrib.wise.util.wise_objects import WiseOutput, WiseNumericalIntegrationParameters
 from orangecontrib.wise.widgets.gui.ow_wise_widget import WiseWidget
 from orangecontrib.wise.util.wise_propagator import WisePropagatorsChain, WisePropagationAlgorithms, WisePropagationParameters
 
@@ -52,13 +53,9 @@ class OWDetector(WiseWidget):
                 self.setStatusMessage("Error!")
 
             self.input_data = input_data
+            self.oe_f2      = self.input_data.get_optical_element().inner_wise_optical_element.f2/self.workspace_units_to_m
 
-            optical_element = self.input_data.get_optical_element()
-
-            self.detector_size = numpy.round(optical_element.get_property("detector_size")*1e6, 1)
-            self.oe_f2         = optical_element.inner_wise_optical_element.f2/self.workspace_units_to_m
-
-            self.compute()
+            #self.compute()
 
 
     def build_gui(self):
@@ -192,31 +189,50 @@ class OWDetector(WiseWidget):
 
         detector_size = self.detector_size*1e-6
 
-        if self.calculation_type == 0:
+        if self.calculation_type == WiseNumericalIntegrationParameters.AUTOMATIC:
             number_of_points = -1
         else:
             number_of_points = self.number_of_points
 
-        propagation_parameter = WisePropagationParameters(propagation_type=WisePropagationParameters.DETECTOR_SURFACE,
+        previous_numerical_integration_parameters = self.input_data.get_numerical_integration_parameters()
+        numerical_integration_parameters = WiseNumericalIntegrationParameters(self.calculation_type, detector_size, number_of_points)
+
+        propagation_type = WisePropagationParameters.MIRROR_AND_DETECTOR
+
+        #
+        # No need to recalculated wavefront on previous mirror surface
+        # if numerical integration parameters are identical
+        #
+        if self.calculation_type == previous_numerical_integration_parameters.calculation_type:
+            if self.calculation_type == WiseNumericalIntegrationParameters.AUTOMATIC:
+                if detector_size == previous_numerical_integration_parameters.detector_size:
+                    propagation_type = WisePropagationParameters.DETECTOR_ONLY
+                    numerical_integration_parameters.calculated_number_of_points = previous_numerical_integration_parameters.calculated_number_of_points
+            else:
+                if self.number_of_points == previous_numerical_integration_parameters.number_of_points:
+                    propagation_type = WisePropagationParameters.DETECTOR_ONLY
+                    numerical_integration_parameters.calculated_number_of_points = previous_numerical_integration_parameters.calculated_number_of_points
+
+        propagation_parameter = WisePropagationParameters(propagation_type=propagation_type,
                                                           source=self.input_data.get_source().inner_wise_source,
                                                           optical_element=self.input_data.get_optical_element().inner_wise_optical_element,
-                                                          number_of_points=number_of_points,
-                                                          detector_size=detector_size,
+                                                          wavefront=self.input_data.get_wavefront(),
+                                                          numerical_integration_parameters=numerical_integration_parameters,
                                                           defocus_sweep=self.defocus_sweep * self.workspace_units_to_m)
 
         propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
                                                                             WisePropagationAlgorithms.HuygensIntegral)
 
         if self.calculation_type == 0:
-            self.calculated_number_of_points = propagation_output.n_auto
+            self.calculated_number_of_points = propagation_output.number_of_points
         else:
             self.calculated_number_of_points = 0
 
-        positions = propagation_output.det_s
+        positions_s = propagation_output.det_s
         electric_fields = propagation_output.electric_fields
 
-        data_to_plot = numpy.zeros((5, len(positions)))
-        data_to_plot[0, :] = positions * 1e6
+        data_to_plot = numpy.zeros((5, len(positions_s)))
+        data_to_plot[0, :] = positions_s * 1e6
         data_to_plot[1, :] = Amp(electric_fields)**2
 
         return data_to_plot
@@ -253,6 +269,8 @@ class OWDetector(WiseWidget):
             if self.input_data is None:
                 raise Exception("No Input Data!")
 
+            sys.stdout = EmittingStream(textWritten=self.writeStdOut)
+
             if self.defocus_start >= self.defocus_stop: raise Exception("Defocus sweep start must be < Defocus sweep stop")
             self.defocus_step = congruence.checkStrictlyPositiveNumber(self. defocus_step, "Defocus sweep step")
             if self.defocus_step >= self.defocus_stop - self.defocus_start: raise Exception("Defocus step is too big")
@@ -260,6 +278,7 @@ class OWDetector(WiseWidget):
             if self.best_focus_slider is None:
                 self.best_focus_slider = QSlider(self.tab[1])
                 self.best_focus_slider.setGeometry(QRect(0, 0, 320, 50))
+                self.best_focus_slider.setMinimumHeight(30)
                 self.best_focus_slider.setOrientation(Qt.Horizontal)
                 self.best_focus_slider.setInvertedAppearance(False)
                 self.best_focus_slider.setInvertedControls(False)
@@ -281,6 +300,25 @@ class OWDetector(WiseWidget):
                 number_of_points = -1
             else:
                 number_of_points = self.number_of_points
+
+            previous_numerical_integration_parameters = self.input_data.get_numerical_integration_parameters()
+            numerical_integration_parameters = WiseNumericalIntegrationParameters(self.calculation_type, detector_size, number_of_points)
+
+            propagation_type = WisePropagationParameters.MIRROR_AND_DETECTOR
+
+            #
+            # No need to recalculated wavefront on previous mirror surface
+            # if numerical integration parameters are identical
+            #
+            if self.calculation_type == previous_numerical_integration_parameters.calculation_type:
+                if self.calculation_type == WiseNumericalIntegrationParameters.AUTOMATIC:
+                    if detector_size == previous_numerical_integration_parameters.detector_size:
+                        propagation_type = WisePropagationParameters.DETECTOR_ONLY
+                        numerical_integration_parameters.calculated_number_of_points = previous_numerical_integration_parameters.calculated_number_of_points
+                else:
+                    if self.number_of_points == previous_numerical_integration_parameters.number_of_points:
+                        propagation_type = WisePropagationParameters.DETECTOR_ONLY
+                        numerical_integration_parameters.calculated_number_of_points = previous_numerical_integration_parameters.calculated_number_of_points
 
             self.defocus_list = numpy.arange(self.defocus_start * self.workspace_units_to_m,
                                              self.defocus_stop  * self.workspace_units_to_m,
@@ -314,11 +352,11 @@ class OWDetector(WiseWidget):
             self.positions_list = []
             self.hews_list = []
 
-            propagation_parameter = WisePropagationParameters(propagation_type=WisePropagationParameters.DETECTOR_SURFACE,
+            propagation_parameter = WisePropagationParameters(propagation_type=propagation_type,
                                                               source=source,
                                                               optical_element=elliptic_mirror,
-                                                              number_of_points=number_of_points,
-                                                              detector_size=detector_size,
+                                                              wavefront=self.input_data.get_wavefront(),
+                                                              numerical_integration_parameters=numerical_integration_parameters,
                                                               n_pools=n_pools)
 
 
@@ -398,6 +436,9 @@ class OWDetector(WiseWidget):
                             ytitle="HEW",
                             log_x=False,
                             log_y=False)
+
+            self.plot_canvas[2].setDefaultPlotLines(True)
+            self.plot_canvas[2].setDefaultPlotPoints(True)
 
             self.best_focus_slider.setValue(index_min)
 

@@ -1,13 +1,21 @@
 import numpy
 from collections import OrderedDict
 
-class Wavefront(object):
+class WiseWavefront(object):
+    positions_x = None
+    positions_y = None
+    positions_s = None
     electric_fields = None
-    positions = None
 
-    def __init__(self, electric_fields=numpy.zeros(100), positions=numpy.zeros(100)):
+    def __init__(self,
+                 positions_x=numpy.zeros(100),
+                 positions_y=numpy.zeros(100),
+                 positions_s=numpy.zeros(100),
+                 electric_fields=numpy.zeros(100)):
+        self.positions_x = positions_x
+        self.positions_y = positions_y
+        self.positions_s = positions_s
         self.electric_fields = electric_fields
-        self.positions = positions
 
 class WiseSource(object):
     inner_wise_source = None
@@ -35,15 +43,36 @@ class WiseOpticalElement(object):
     def get_property(self, key):
         return self.properties[key]
 
+class WiseNumericalIntegrationParameters:
+    AUTOMATIC = 0
+    USER_DEFINED = 1
+
+    calculation_type = 0
+    detector_size = 0.0
+    number_of_points = 0
+    calculated_number_of_points = 0
+
+    def __init__(self, calculation_type=AUTOMATIC, detector_size=0.0, number_of_points=0, calculated_number_of_points=0):
+        self.calculation_type = calculation_type
+        self.detector_size = detector_size
+        self.number_of_points = number_of_points
+        self.calculated_number_of_points = calculated_number_of_points
+
 class WiseOutput(object):
     _source = None
     _optical_element = None
     _wavefront = None
+    _numerical_integration_parameters = None
 
-    def __init__(self, source=None, optical_element=None, wavefront=None):
+    def __init__(self,
+                 source=None,
+                 optical_element=None,
+                 wavefront=None,
+                 numerical_integration_parameters=None):
         self._source = source
         self._optical_element = optical_element
         self._wavefront = wavefront
+        self._numerical_integration_parameters = numerical_integration_parameters
 
     def has_source(self):
         return not self._source is None
@@ -63,6 +92,11 @@ class WiseOutput(object):
     def get_wavefront(self):
         return self._wavefront
 
+    def has_numerical_integration_parameters(self):
+        return not self._numerical_integration_parameters is None
+
+    def get_numerical_integration_parameters(self):
+        return self._numerical_integration_parameters
 
 class WisePreInputData:
 

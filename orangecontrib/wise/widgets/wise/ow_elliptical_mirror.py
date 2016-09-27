@@ -6,7 +6,7 @@ from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui
 from oasys.widgets import congruence
 
-from orangecontrib.wise.util.wise_objects import WiseOpticalElement, Wavefront, WiseOutput, WisePreInputData
+from orangecontrib.wise.util.wise_objects import WiseOpticalElement, WiseWavefront, WiseOutput, WisePreInputData, WiseNumericalIntegrationParameters
 from orangecontrib.wise.widgets.gui.ow_wise_widget import WiseWidget
 from orangecontrib.wise.util.wise_propagator import WisePropagatorsChain, WisePropagationAlgorithms, WisePropagationParameters
 
@@ -222,61 +222,69 @@ class OWEllipticalMirror(WiseWidget):
 
         #------------------------------------------------------------
 
-        wise_source = self.input_data.get_source()
+        source = self.input_data.get_source()
 
-        if wise_source.get_property("source_on_mirror_focus"):
-            wise_source.inner_wise_source = Optics.GaussianSource_1d(wise_source.inner_wise_source.Lambda,
-                                                                     wise_source.inner_wise_source.Waist0,
-                                                                     ZOrigin = elliptic_mirror.XYF1[0],
-                                                                     YOrigin = elliptic_mirror.XYF1[1],
-                                                                     Theta = elliptic_mirror.p1_Angle)
+        if source.get_property("source_on_mirror_focus"):
+            source.inner_wise_source = Optics.GaussianSource_1d(source.inner_wise_source.Lambda,
+                                                                source.inner_wise_source.Waist0,
+                                                                ZOrigin = elliptic_mirror.XYF1[0],
+                                                                YOrigin = elliptic_mirror.XYF1[1],
+                                                                Theta = elliptic_mirror.p1_Angle)
 
-        if self.calculation_type == 0:
+        if self.calculation_type == WiseNumericalIntegrationParameters.AUTOMATIC:
             detector_size = self.detector_size*1e-6
             number_of_points = -1
         else:
             detector_size = 0.0
             number_of_points = self.number_of_points
 
-        propagation_parameter = WisePropagationParameters(propagation_type=WisePropagationParameters.MIRROR_SURFACE,
-                                                          source=wise_source.inner_wise_source,
+        numerical_integration_parameters = WiseNumericalIntegrationParameters(self.calculation_type, detector_size, number_of_points)
+
+        propagation_parameter = WisePropagationParameters(propagation_type=WisePropagationParameters.MIRROR_ONLY,
+                                                          source=source.inner_wise_source,
                                                           optical_element=elliptic_mirror,
-                                                          number_of_points=number_of_points,
-                                                          detector_size=detector_size)
+                                                          numerical_integration_parameters=numerical_integration_parameters)
 
         propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
                                                                             WisePropagationAlgorithms.HuygensIntegral)
 
 
-        mir_E = propagation_output.mir_E
-        mir_s = propagation_output.mir_s
-
-        if self.calculation_type == 0:
-            self.calculated_number_of_points = propagation_output.n_auto
+        if self.calculation_type == WiseNumericalIntegrationParameters.AUTOMATIC:
+            self.calculated_number_of_points = propagation_output.number_of_points
         else:
             self.calculated_number_of_points = 0
 
-        wise_optical_element = WiseOpticalElement(inner_wise_optical_element=elliptic_mirror)
-        wise_optical_element.set_property("detector_size", self.detector_size*1e-6)
+        wavefront_out = WiseWavefront(propagation_output.mir_x,
+                                           propagation_output.mir_y,
+                                           propagation_output.mir_s,
+                                           propagation_output.mir_E)
 
-        data_to_plot = numpy.zeros((5, len(mir_s)))
-        data_to_plot[0, :] = mir_s / self.workspace_units_to_m
-        data_to_plot[1, :] = Amp(mir_E)**2
-        data_to_plot[2, :] = Cyc(mir_E)
+
+        numerical_integration_parameters_out = WiseNumericalIntegrationParameters(self.calculation_type,
+                                                                                  detector_size,
+                                                                                  number_of_points,
+                                                                                  propagation_output.number_of_points)
+
+        optical_element_out = WiseOpticalElement(inner_wise_optical_element=elliptic_mirror)
+
+        data_to_plot = numpy.zeros((5, len(propagation_output.mir_s)))
+        data_to_plot[0, :] = propagation_output.mir_s / self.workspace_units_to_m
+        data_to_plot[1, :] = Amp(propagation_output.mir_E)**2
+        data_to_plot[2, :] = Cyc(propagation_output.mir_E)
 
         if len(elliptic_mirror.FigureErrors) > 0:
             figure_error_x = numpy.linspace(0, self.length, len(elliptic_mirror.FigureErrors[0]))
-            data_to_plot_2 = numpy.zeros((2, len(figure_error_x)))
+            data_to_plot_fe = numpy.zeros((2, len(figure_error_x)))
 
-            data_to_plot_2[0, :] = figure_error_x
-            data_to_plot_2[1, :] = elliptic_mirror.FigureErrors[0]*1e9 # nm
+            data_to_plot_fe[0, :] = figure_error_x
+            data_to_plot_fe[1, :] = elliptic_mirror.FigureErrors[0]*1e9 # nm
         else:
-            data_to_plot_2 = numpy.zeros((2, 1))
+            data_to_plot_fe = numpy.zeros((2, 1))
 
-            data_to_plot_2[0, :] = numpy.zeros(1)
-            data_to_plot_2[1, :] = numpy.zeros(1)
+            data_to_plot_fe[0, :] = numpy.zeros(1)
+            data_to_plot_fe[1, :] = numpy.zeros(1)
 
-        return wise_source, wise_optical_element, data_to_plot, data_to_plot_2
+        return source, optical_element_out, wavefront_out, numerical_integration_parameters_out, data_to_plot, data_to_plot_fe
 
     def getTabTitles(self):
         return ["Field Intensity (mirror)", "Optical Cycles (mirror)", "Figure Error"]
@@ -297,7 +305,7 @@ class OWEllipticalMirror(WiseWidget):
         return [(False, False), (False, False), (False, False)]
 
     def extract_plot_data_from_calculation_output(self, calculation_output):
-        return calculation_output[2], calculation_output[3]
+        return calculation_output[4], calculation_output[5]
 
 
     def plot_results(self, plot_data, progressBarValue=80):
@@ -356,4 +364,6 @@ class OWEllipticalMirror(WiseWidget):
 
     def extract_wise_output_from_calculation_output(self, calculation_output):
         return WiseOutput(source=calculation_output[0],
-                          optical_element=calculation_output[1])
+                          optical_element=calculation_output[1],
+                          wavefront=calculation_output[2],
+                          numerical_integration_parameters=calculation_output[3])
