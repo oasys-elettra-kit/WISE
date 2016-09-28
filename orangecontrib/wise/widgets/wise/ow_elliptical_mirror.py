@@ -255,9 +255,10 @@ class OWEllipticalMirror(WiseWidget):
             self.calculated_number_of_points = 0
 
         wavefront_out = WiseWavefront(propagation_output.mir_x,
-                                           propagation_output.mir_y,
-                                           propagation_output.mir_s,
-                                           propagation_output.mir_E)
+                                      propagation_output.mir_y,
+                                      propagation_output.mir_s,
+                                      propagation_output.mir_E,
+                                      propagation_output.residuals)
 
 
         numerical_integration_parameters_out = WiseNumericalIntegrationParameters(self.calculation_type,
@@ -272,12 +273,12 @@ class OWEllipticalMirror(WiseWidget):
         data_to_plot[1, :] = Amp(propagation_output.mir_E)**2
         data_to_plot[2, :] = Cyc(propagation_output.mir_E)
 
-        if len(elliptic_mirror.FigureErrors) > 0:
-            figure_error_x = numpy.linspace(0, self.length, len(elliptic_mirror.FigureErrors[0]))
+        if len(propagation_output.residuals) > 0:
+            figure_error_x = numpy.linspace(0, self.length, len(propagation_output.residuals))
             data_to_plot_fe = numpy.zeros((2, len(figure_error_x)))
 
             data_to_plot_fe[0, :] = figure_error_x
-            data_to_plot_fe[1, :] = elliptic_mirror.FigureErrors[0]*1e9 # nm
+            data_to_plot_fe[1, :] = propagation_output.residuals*1e9 # nm
         else:
             data_to_plot_fe = numpy.zeros((2, 1))
 

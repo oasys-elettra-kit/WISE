@@ -6,16 +6,19 @@ class WiseWavefront(object):
     positions_y = None
     positions_s = None
     electric_fields = None
+    height_errors = None
 
     def __init__(self,
                  positions_x=numpy.zeros(100),
                  positions_y=numpy.zeros(100),
                  positions_s=numpy.zeros(100),
-                 electric_fields=numpy.zeros(100)):
+                 electric_fields=numpy.zeros(100),
+                 height_errors=numpy.zeros(100)):
         self.positions_x = positions_x
         self.positions_y = positions_y
         self.positions_s = positions_s
         self.electric_fields = electric_fields
+        self.height_errors = height_errors
 
 class WiseSource(object):
     inner_wise_source = None

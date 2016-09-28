@@ -109,6 +109,7 @@ class HuygensIntegralPropagationOutput(object):
                  mir_y,
                  mir_s,
                  mir_E,
+                 residuals,
                  number_of_points,
                  det_x,
                  det_y,
@@ -119,6 +120,7 @@ class HuygensIntegralPropagationOutput(object):
         self.mir_y = mir_y
         self.mir_s = mir_s
         self.mir_E = mir_E
+        self.residuals = residuals
         self.number_of_points = number_of_points
         self.det_x = det_x
         self.det_y = det_y
@@ -155,7 +157,7 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
                 number_of_points = numerical_integration_parameters.number_of_points
 
             # Wavefront on mirror surface
-            mir_x, mir_y = elliptic_mirror.GetXY_MeasuredMirror(number_of_points, 0)
+            mir_x, mir_y, residuals = elliptic_mirror.GetXY_MeasuredMirror(number_of_points, 0)
             mir_s = Rayman.xy_to_s(mir_x, mir_y)
             mir_E = source.EvalField_XYLab(mir_x, mir_y)
 
@@ -166,6 +168,7 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
             mir_y = parameters.wavefront.positions_y
             mir_s = parameters.wavefront.positions_s
             mir_E = parameters.wavefront.electric_fields
+            residuals = parameters.wavefront.height_errors
             number_of_points = numerical_integration_parameters.calculated_number_of_points
 
             print("*** used mir_x, mir_y, mir_s, mir_E from mirror")
@@ -195,6 +198,7 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
                                                     mir_y,
                                                     mir_s,
                                                     mir_E,
+                                                    residuals,
                                                     number_of_points,
                                                     det_x,
                                                     det_y,
@@ -206,6 +210,7 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
                                                     mir_y,
                                                     mir_s,
                                                     mir_E,
+                                                    residuals,
                                                     number_of_points,
                                                     None,
                                                     None,
