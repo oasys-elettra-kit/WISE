@@ -44,7 +44,7 @@ INSTALL_REQUIRES = (
     'srxraylib>=0.0.9',
     'orange-widget-core>=0.0.2',
     'oasys>=0.1.18',
-    'wiselib',
+    'wiselib>=1.0.2',
 )
 
 PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
