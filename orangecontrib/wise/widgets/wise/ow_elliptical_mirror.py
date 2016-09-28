@@ -11,7 +11,7 @@ from orangecontrib.wise.widgets.gui.ow_wise_widget import WiseWidget
 from orangecontrib.wise.util.wise_propagator import WisePropagatorsChain, WisePropagationAlgorithms, WisePropagationParameters
 
 from wiselib import Optics
-from  wiselib.Rayman5 import Amp, Cyc
+from  wiselib.Rayman import Amp, Cyc
 
 SOURCE = 0
 OE = 1

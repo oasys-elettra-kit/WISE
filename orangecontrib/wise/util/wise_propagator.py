@@ -101,7 +101,7 @@ class AbstractWisePropagator(object):
 ###################################################################
 
 import numpy
-import wiselib.Rayman5 as Rayman
+import wiselib.Rayman as Rayman
 
 class HuygensIntegralPropagationOutput(object):
     def __init__(self,
@@ -157,7 +157,9 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
                 number_of_points = numerical_integration_parameters.number_of_points
 
             # Wavefront on mirror surface
-            mir_x, mir_y, residuals = elliptic_mirror.GetXY_MeasuredMirror(number_of_points, 0)
+            mir_x, mir_y = elliptic_mirror.GetXY_MeasuredMirror(number_of_points, 0)
+            residuals = elliptic_mirror.LastResidualUsed
+
             mir_s = Rayman.xy_to_s(mir_x, mir_y)
             mir_E = source.EvalField_XYLab(mir_x, mir_y)
 
@@ -190,7 +192,7 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
                                                                   det_y,
                                                                   parameters.n_pools)
 
-            hew = Rayman.HalfEnergyWidth_1d(abs(electric_fields)**2, Step = numpy.sqrt((det_x[0] - det_x[-1])**2 + (det_y[0] - det_y[-1])**2))
+            hew = Rayman.HalfEnergyWidth_1d(abs(electric_fields)**2, Step = numpy.mean(numpy.diff(det_s)))
 
             print("*** calculated det_x, det_y, det_s, electric_fields, hew on detector")
 

@@ -12,7 +12,7 @@ from orangecontrib.wise.util.wise_objects import WiseOutput, WiseNumericalIntegr
 from orangecontrib.wise.widgets.gui.ow_wise_widget import WiseWidget
 from orangecontrib.wise.util.wise_propagator import WisePropagatorsChain, WisePropagationAlgorithms, WisePropagationParameters
 
-from  wiselib.Rayman5 import Amp
+from  wiselib.Rayman import Amp
 
 class OWDetector(WiseWidget):
     name = "Detector"
@@ -390,7 +390,8 @@ class OWDetector(WiseWidget):
                                     i*progress_bar_increment,
                                     tabs_canvas_index=1,
                                     plot_canvas_index=1,
-                                    title="Defocus Sweep: " + str(defocus/self.workspace_units_to_m) + " (" + str(i+1) + "/" + str(n_defocus) + "), HEW: " + str(round(propagation_output.HEW, 5)),
+                                    title="Defocus Sweep: " + str(defocus/self.workspace_units_to_m) + " (" + str(i+1) + "/" + str(n_defocus) +
+                                          "), HEW: " + str(round(propagation_output.HEW*1e6, 4)) + " [$\mu$m]",
                                     xtitle="Z [$\mu$m]",
                                     ytitle="Intensity",
                                     log_x=False,
@@ -408,37 +409,42 @@ class OWDetector(WiseWidget):
             best_focus_electric_fields = self.electric_fields_list[index_min]
             best_focus_positions       = self.positions_list[index_min]
 
-            if self.show_animation == 1:
-                QMessageBox.information(self,
-                                        "Best Focus Calculation",
-                                        "Best Focus Found!\n\nPosition: " + str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) + "\nHEW: " + str(round(self.hews_list[index_min], 5)),
-                                        QMessageBox.Ok
-                                        )
+            QMessageBox.information(self,
+                                    "Best Focus Calculation",
+                                    "Best Focus Found!\n\nPosition: " + str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) +
+                                    "\nHEW: " + str(round(self.hews_list[index_min]*1e6, 4)) + " [" + u"\u03BC" + "m]",
+                                    QMessageBox.Ok
+                                    )
 
             self.plot_histo(best_focus_positions * 1e6,
                             Amp(best_focus_electric_fields) ** 2,
                             100,
                             tabs_canvas_index=1,
                             plot_canvas_index=1,
-                            title="(BEST FOCUS) Defocus Sweep: " + str(self.defocus_list[index_min]/self.workspace_units_to_m) + " ("+ str(index_min+1) + "/" + str(n_defocus) + "), Position: " + str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) + ", HEW: " + str(round(self.hews_list[index_min], 5)),
+                            title="(BEST FOCUS) Defocus Sweep: " + str(self.defocus_list[index_min]/self.workspace_units_to_m) +
+                                  " ("+ str(index_min+1) + "/" + str(n_defocus) + "), Position: " +
+                                  str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) +
+                                  ", HEW: " + str(round(self.hews_list[index_min]*1e6, 4)) + " [$\mu$m]",
                             xtitle="Z [$\mu$m]",
                             ytitle="Intensity",
                             log_x=False,
                             log_y=False)
 
             self.plot_histo(self.defocus_list,
-                            self.hews_list,
+                            numpy.multiply(self.hews_list, 1e6),
                             100,
                             tabs_canvas_index=2,
                             plot_canvas_index=2,
                             title="HEW vs Defocus Sweep",
-                            xtitle="Defocus [" + self.workspace_units_label + "]",
-                            ytitle="HEW",
+                            xtitle="",
+                            ytitle="",
                             log_x=False,
                             log_y=False)
 
             self.plot_canvas[2].setDefaultPlotLines(True)
             self.plot_canvas[2].setDefaultPlotPoints(True)
+            self.plot_canvas[2].setGraphXLabel("Defocus [" + self.workspace_units_label + "]")
+            self.plot_canvas[2].setGraphYLabel("HEW [$\mu$m]")
 
             self.best_focus_slider.setValue(index_min)
 
@@ -469,10 +475,13 @@ class OWDetector(WiseWidget):
             positions       = self.positions_list[index]
 
             if index == self.best_focus_index:
-                title = "(BEST FOCUS) Defocus Sweep: " + str(self.defocus_list[index]/self.workspace_units_to_m) + " ("+ str(index+1) + "/" + str(n_defocus) + "), Position: " + str(self.oe_f2 + (self.defocus_list[index]/self.workspace_units_to_m)) + ", HEW: " + str(round(self.hews_list[index], 5))
+                title = "(BEST FOCUS) Defocus Sweep: " + str(self.defocus_list[index]/self.workspace_units_to_m) + \
+                        " ("+ str(index+1) + "/" + str(n_defocus) + "), Position: " + \
+                        str(self.oe_f2 + (self.defocus_list[index]/self.workspace_units_to_m)) + \
+                        ", HEW: " + str(round(self.hews_list[index]*1e6, 4)) + " [$\mu$m]"
             else:
-                title = "Defocus Sweep: " + str(self.defocus_list[index]/self.workspace_units_to_m) + " (" + str(index+1) + "/" + str(n_defocus) + "), HEW: " + str(round(self.hews_list[index], 5))
-
+                title = "Defocus Sweep: " + str(self.defocus_list[index]/self.workspace_units_to_m) + \
+                        " (" + str(index+1) + "/" + str(n_defocus) + "), HEW: " + str(round(self.hews_list[index]*1e6, 4)) + " [$\mu$m]"
 
             self.plot_histo(positions * 1e6,
                             Amp(electric_fields)**2,
@@ -507,8 +516,8 @@ class OWDetector(WiseWidget):
 
                             intensities = Amp(self.electric_fields_list[index]) ** 2
 
-                            file.write("# Defocus Sweep: " + str(self.defocus_list[index]) + " [m] \n")
-                            file.write("# HEW          : " + str(self.hews_list[index]) + "\n")
+                            file.write("# Defocus Sweep: " + str(self.defocus_list[index]) + " [m]\n")
+                            file.write("# HEW          : " + str(self.hews_list[index]) + " [m]\n")
                             file.write("# Position [m]  Intensity\n")
 
                             for i in range (0, len(self.positions_list[index])):
