@@ -5,7 +5,7 @@ import os
 from setuptools import find_packages, setup
 
 NAME = 'OASYS-WISE'
-VERSION = '1.0.18'
+VERSION = '1.0.19'
 ISRELEASED = True
 
 DESCRIPTION = 'WISE in Python'
@@ -44,7 +44,7 @@ INSTALL_REQUIRES = (
     'srxraylib>=0.0.9',
     'orange-widget-core>=0.0.2',
     'oasys>=0.1.18',
-    'wiselib>=1.0.2',
+    'wiselib>=1.0.3',
 )
 
 PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
