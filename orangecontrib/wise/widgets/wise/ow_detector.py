@@ -183,6 +183,15 @@ class OWDetector(WiseWidget):
         if self.use_multipool == 1:
             self.n_pools = congruence.checkStrictlyPositiveNumber(self.n_pools, "Nr. Parallel Processes")
 
+            import multiprocessing
+            number_of_cpus = multiprocessing.cpu_count()
+
+            if number_of_cpus == 1:
+                raise Exception("Parallel processing not available with 1 CPU")
+            elif self.n_pools >= number_of_cpus:
+                raise Exception("Max number of parallel processes allowed on this computer: " + str(number_of_cpus-1))
+
+
     def do_wise_calculation(self):
         if self.input_data is None:
             raise Exception("No Input Data!")
@@ -271,6 +280,7 @@ class OWDetector(WiseWidget):
 
             sys.stdout = EmittingStream(textWritten=self.writeStdOut)
 
+            self.check_fields()
             if self.defocus_start >= self.defocus_stop: raise Exception("Defocus sweep start must be < Defocus sweep stop")
             self.defocus_step = congruence.checkStrictlyPositiveNumber(self. defocus_step, "Defocus sweep step")
             if self.defocus_step >= self.defocus_stop - self.defocus_start: raise Exception("Defocus step is too big")
@@ -454,8 +464,6 @@ class OWDetector(WiseWidget):
             self.save_button.setEnabled(True)
 
         except Exception as exception:
-            self.best_focus_slider.valueChanged.connect(self.plot_detail)
-
             QMessageBox.critical(self, "Error", str(exception), QMessageBox.Ok)
 
             self.setStatusMessage("Error!")
