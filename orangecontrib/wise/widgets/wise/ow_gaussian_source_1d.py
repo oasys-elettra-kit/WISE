@@ -28,6 +28,10 @@ class OWGaussianSource1d(WiseWidget):
     x_origin = Setting(0.0)
     theta = Setting(0.0)
 
+    longitudinal_correction = Setting(0.0)
+    transverse_correction = Setting(0.0)
+    delta_theta = Setting(0.0)
+
     def build_gui(self):
 
         main_box = oasysgui.widgetBox(self.controlArea, "Gaussian Source 1D Input Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5, height=200)
@@ -38,21 +42,26 @@ class OWGaussianSource1d(WiseWidget):
         gui.separator(main_box, height=5)
 
         gui.comboBox(main_box, self, "source_position", label="Source Position",
-                                            items=["User Defined", "Put Source of Mirror Focus"], labelWidth=260,
+                                            items=["User Defined", "Put Source at Mirror Focus"], labelWidth=260,
                                             callback=self.set_SourcePosition, sendSelectedValue=False, orientation="horizontal")
 
-        self.source_position_box = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
-        self.source_position_box_empty = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
+        self.source_position_box_1 = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
+        self.source_position_box_2 = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
 
-        self.le_z_origin = oasysgui.lineEdit(self.source_position_box, self, "z_origin", "Z Origin", labelWidth=260, valueType=float, orientation="horizontal")
-        self.le_x_origin = oasysgui.lineEdit(self.source_position_box, self, "x_origin", "X Origin", labelWidth=260, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(self.source_position_box, self, "theta", "Theta [deg]", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_z_origin = oasysgui.lineEdit(self.source_position_box_1, self, "z_origin", "Z Origin", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_x_origin = oasysgui.lineEdit(self.source_position_box_1, self, "x_origin", "X Origin", labelWidth=260, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(self.source_position_box_1, self, "theta", "Theta [deg]", labelWidth=260, valueType=float, orientation="horizontal")
+
+
+        self.le_longitudinal_correction = oasysgui.lineEdit(self.source_position_box_2, self, "longitudinal_correction", "Longitudinal correction", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_transverse_correction = oasysgui.lineEdit(self.source_position_box_2, self, "transverse_correction", "Transverse correction", labelWidth=260, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(self.source_position_box_2, self, "delta_theta", "\u0394" + "Theta [deg]", labelWidth=260, valueType=float, orientation="horizontal")
 
         self.set_SourcePosition()
 
     def set_SourcePosition(self):
-        self.source_position_box.setVisible(self.source_position == 0)
-        self.source_position_box_empty.setVisible(self.source_position == 1)
+        self.source_position_box_1.setVisible(self.source_position == 0)
+        self.source_position_box_2.setVisible(self.source_position == 1)
 
     def after_change_workspace_units(self):
         label = self.le_source_sigma.parent().layout().itemAt(0).widget()
@@ -61,12 +70,22 @@ class OWGaussianSource1d(WiseWidget):
         label.setText(label.text() + " [" + self.workspace_units_label + "]")
         label = self.le_x_origin.parent().layout().itemAt(0).widget()
         label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_longitudinal_correction.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_transverse_correction.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
 
 
     def check_fields(self):
         self.source_lambda = congruence.checkStrictlyPositiveNumber(self.source_lambda, "Wavelength")
         self.source_sigma = congruence.checkStrictlyPositiveNumber(self.source_sigma, "Sigma")
-        self.theta = congruence.checkAngle(self.theta, "Theta")
+
+        if self.source_position == 0:
+            self.longitudinal_correction = congruence.checkNumber(self.longitudinal_correction, "Longitudinal Correction")
+            self.transverse_correction = congruence.checkNumber(self.transverse_correction, "Transverse Correction")
+            self.delta_theta = congruence.checkAngle(self.delta_theta, "\u0394" + "Theta")
+        else:
+            self.theta = congruence.checkAngle(self.theta, "Theta")
 
     def do_wise_calculation(self):
         if self.source_position == 1:
@@ -105,6 +124,11 @@ class OWGaussianSource1d(WiseWidget):
     def extract_wise_output_from_calculation_output(self, calculation_output):
         wise_source = WiseSource(inner_wise_source=calculation_output[0])
         wise_source.set_property("source_on_mirror_focus", self.source_position == 1)
+
+        if self.source_position == 1:
+            wise_source.set_property("longitudinal_correction", self.longitudinal_correction)
+            wise_source.set_property("transverse_correction", self.transverse_correction)
+            wise_source.set_property("delta_theta", self.delta_theta)
 
         return WiseOutput(source=wise_source)
 

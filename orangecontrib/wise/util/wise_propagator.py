@@ -138,7 +138,7 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
         source = parameters.source
         numerical_integration_parameters = parameters.numerical_integration_parameters
 
-        print("\nPropagation Type = " + str(parameters.propagation_type) + "\n[0=Mirror Only, 1=Detector Only (no calculation of mirror E), 2=Mirror+Detector]\n")
+        #print("\nPropagation Type = " + str(parameters.propagation_type) + "\n[0=Mirror Only, 1=Detector Only (no calculation of mirror E), 2=Mirror+Detector]\n")
 
         if parameters.propagation_type == WisePropagationParameters.MIRROR_ONLY or \
             parameters.propagation_type == WisePropagationParameters.MIRROR_AND_DETECTOR:
@@ -163,7 +163,7 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
             mir_s = Rayman.xy_to_s(mir_x, mir_y)
             mir_E = source.EvalField_XYLab(mir_x, mir_y)
 
-            print("*** calculated new mir_x, mir_y, mir_s, mir_E")
+            #print("*** calculated new mir_x, mir_y, mir_s, mir_E")
 
         elif parameters.propagation_type == WisePropagationParameters.DETECTOR_ONLY:
             mir_x = parameters.wavefront.positions_x
@@ -173,7 +173,7 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
             residuals = parameters.wavefront.height_errors
             number_of_points = numerical_integration_parameters.calculated_number_of_points
 
-            print("*** used mir_x, mir_y, mir_s, mir_E from mirror")
+            #print("*** used mir_x, mir_y, mir_s, mir_E from mirror")
 
         if parameters.propagation_type == WisePropagationParameters.DETECTOR_ONLY or \
             parameters.propagation_type == WisePropagationParameters.MIRROR_AND_DETECTOR:
@@ -191,10 +191,13 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
                                                                   det_x,
                                                                   det_y,
                                                                   parameters.n_pools)
+            try:
+                hew = Rayman.HalfEnergyWidth_1d(abs(electric_fields)**2, Step = numpy.mean(numpy.diff(det_s)))
+            except ValueError as error:
+                if "cannot convert float NaN to integer" in str(error):
+                    raise Exception("Inconsistent source parameters.\nMaybe " + "\u0394" + "Theta is too big.")
 
-            hew = Rayman.HalfEnergyWidth_1d(abs(electric_fields)**2, Step = numpy.mean(numpy.diff(det_s)))
-
-            print("*** calculated det_x, det_y, det_s, electric_fields, hew on detector")
+            #print("*** calculated det_x, det_y, det_s, electric_fields, hew on detector")
 
             return HuygensIntegralPropagationOutput(mir_x,
                                                     mir_y,

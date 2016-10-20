@@ -3,6 +3,7 @@ import numpy
 from PyQt4.QtGui import QPalette, QColor, QFont, QMessageBox, QFileDialog, QSlider
 from PyQt4.QtCore import QRect, Qt
 from orangewidget import gui
+from orangewidget.widget import OWAction
 from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui
 from oasys.widgets import congruence
@@ -42,7 +43,6 @@ class OWDetector(WiseWidget):
     input_data = None
     run_calculation = True
 
-
     def set_input(self, input_data):
         self.setStatusMessage("")
 
@@ -55,10 +55,17 @@ class OWDetector(WiseWidget):
             self.input_data = input_data
             self.oe_f2      = self.input_data.get_optical_element().inner_wise_optical_element.f2/self.workspace_units_to_m
 
-            #self.compute()
-
+            if self.is_automatic_run: self.compute()
 
     def build_gui(self):
+        runaction = OWAction("Find Best Focus Position", self)
+        runaction.triggered.connect(self.do_best_focus_calculation)
+        self.addAction(runaction)
+
+        runaction = OWAction("Interrupt Best Focus Calculation", self)
+        runaction.triggered.connect(self.stop_best_focus_calculation)
+        self.addAction(runaction)
+
         self.view_type = 1
         self.button_box.setVisible(False)
 
@@ -190,7 +197,6 @@ class OWDetector(WiseWidget):
                 raise Exception("Parallel processing not available with 1 CPU")
             elif self.n_pools >= number_of_cpus:
                 raise Exception("Max number of parallel processes allowed on this computer: " + str(number_of_cpus-1))
-
 
     def do_wise_calculation(self):
         if self.input_data is None:
@@ -354,8 +360,8 @@ class OWDetector(WiseWidget):
             else:
                 n_pools = self.n_pools
 
-            index_min = -1
             hew_min = numpy.inf
+            index_min_list = []
 
             self.best_focus_index = -1
             self.electric_fields_list = []
@@ -411,9 +417,15 @@ class OWDetector(WiseWidget):
                 else:
                     self.progressBarSet(value=i*progress_bar_increment)
 
-                if propagation_output.HEW < hew_min:
-                    hew_min = propagation_output.HEW
-                    index_min = i
+                hew = round(propagation_output.HEW*1e6, 11) # problems with double precision numbers: inconsistent comparisons
+
+                if hew < hew_min:
+                    hew_min = hew
+                    index_min_list = [i]
+                elif hew == hew_min:
+                    index_min_list.append(i)
+
+            index_min = index_min_list[int(len(index_min_list)/2)] # choosing the central value, when hew reach a pletau
 
             self.best_focus_index = index_min
             best_focus_electric_fields = self.electric_fields_list[index_min]

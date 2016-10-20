@@ -58,6 +58,8 @@ class OWEllipticalMirror(WiseWidget):
 
             self.input_data = input_data
 
+            if self.is_automatic_run: self.compute()
+
     def set_pre_input(self, data):
         if data is not None:
             if data.figure_error_file != WisePreInputData.NONE:
@@ -225,11 +227,29 @@ class OWEllipticalMirror(WiseWidget):
         source = self.input_data.get_source()
 
         if source.get_property("source_on_mirror_focus"):
+            longitudinal_correction = float(source.get_property("longitudinal_correction"))
+            transverse_correction   = float(source.get_property("transverse_correction"))
+            delta_theta             = numpy.radians(float(source.get_property("delta_theta")))
+
+            if longitudinal_correction == 0.0:
+                if transverse_correction == 0.0:
+                    alpha = 0
+                else:
+                    alpha = elliptic_mirror.p1_Angle + numpy.sign(transverse_correction)*numpy.pi/2
+            else:
+                alpha = elliptic_mirror.p1_Angle + numpy.arctan(transverse_correction/longitudinal_correction)
+
+            defocus = numpy.sqrt(longitudinal_correction**2 + transverse_correction**2)
+
+            theta = elliptic_mirror.p1_Angle + delta_theta
+            z_origin = elliptic_mirror.XYF1[0] + defocus*numpy.cos(alpha)
+            y_origin = elliptic_mirror.XYF1[1] + defocus*numpy.sin(alpha)
+
             source.inner_wise_source = Optics.GaussianSource_1d(source.inner_wise_source.Lambda,
                                                                 source.inner_wise_source.Waist0,
-                                                                ZOrigin = elliptic_mirror.XYF1[0],
-                                                                YOrigin = elliptic_mirror.XYF1[1],
-                                                                Theta = elliptic_mirror.p1_Angle)
+                                                                ZOrigin=z_origin,
+                                                                YOrigin=y_origin,
+                                                                Theta=theta)
 
         if self.calculation_type == WiseNumericalIntegrationParameters.AUTOMATIC:
             detector_size = self.detector_size*1e-6

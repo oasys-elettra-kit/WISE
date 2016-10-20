@@ -29,6 +29,8 @@ class WiseWidget(widget.OWWidget):
     CONTROL_AREA_WIDTH = 405
     TABS_AREA_HEIGHT = 560
 
+    is_automatic_run = Setting(False)
+
     view_type=Setting(1)
 
     calculated_data = None
@@ -53,6 +55,9 @@ class WiseWidget(widget.OWWidget):
         self.setMaximumWidth(self.geometry().width())
 
         self.controlArea.setFixedWidth(self.CONTROL_AREA_WIDTH)
+
+        self.general_options_box = gui.widgetBox(self.controlArea, "General Options", addSpace=True, orientation="horizontal")
+        gui.checkBox(self.general_options_box, self, 'is_automatic_run', 'Automatic Execution')
 
         self.button_box = gui.widgetBox(self.controlArea, "", orientation="horizontal")
         #widget buttons: compute, set defaults, help
