@@ -20,7 +20,7 @@ LICENSE = 'GPLv3'
 KEYWORDS = (
     'waveoptics',
     'simulator',
-    'oasys',
+    'oasys1',
 )
 
 CLASSIFIERS = (
@@ -38,7 +38,7 @@ SETUP_REQUIRES = (
 
 INSTALL_REQUIRES = (
     'setuptools',
-    'oasys>=0.1.26',
+    'oasys>=1.0.0',
     'wiselib>=1.0.3',
 )
 
