@@ -1,7 +1,2 @@
 
-This is the WORKING project for WISE
-
-THIS VERSION IS UNDER DEVELOPMENT AND IS HIGLY INSTABLE:
-
-             INSTALLATION IS NOT RECOMENDED!!!!
-
+WISE in OASYS - Prototype Version
