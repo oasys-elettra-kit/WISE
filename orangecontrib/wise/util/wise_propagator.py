@@ -170,7 +170,7 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
             mir_y = parameters.wavefront.positions_y
             mir_s = parameters.wavefront.positions_s
             mir_E = parameters.wavefront.electric_fields
-            residuals = parameters.wavefront.height_errors
+            residuals = parameters.wavefront.residuals
             number_of_points = numerical_integration_parameters.calculated_number_of_points
 
             #print("*** used mir_x, mir_y, mir_s, mir_E from mirror")

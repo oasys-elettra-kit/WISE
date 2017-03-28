@@ -6,19 +6,19 @@ class WiseWavefront(object):
     positions_y = None
     positions_s = None
     electric_fields = None
-    height_errors = None
+    residuals = None
 
     def __init__(self,
                  positions_x=numpy.zeros(100),
                  positions_y=numpy.zeros(100),
                  positions_s=numpy.zeros(100),
                  electric_fields=numpy.zeros(100),
-                 height_errors=numpy.zeros(100)):
+                 residuals=numpy.zeros(0)):
         self.positions_x = positions_x
         self.positions_y = positions_y
         self.positions_s = positions_s
         self.electric_fields = electric_fields
-        self.height_errors = height_errors
+        self.residuals = residuals
 
 class WiseSource(object):
     inner_wise_source = None
@@ -37,9 +37,10 @@ class WiseOpticalElement(object):
     inner_wise_optical_element = None
     properties = OrderedDict()
     
-    def __init__(self, inner_wise_optical_element=None):
+    def __init__(self,
+                 inner_wise_optical_element=None):
         self.inner_wise_optical_element = inner_wise_optical_element
-        
+
     def set_property(self, key, value):
         self.properties[key] = value
     
