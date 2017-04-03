@@ -13,10 +13,10 @@ from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui
 from oasys.widgets import congruence
 from oasys.widgets.gui import ConfirmDialog
-
+from oasys.util.oasys_util import EmittingStream
 
 from orangecontrib.wise.util.wise_objects import WisePreInputData
-from orangecontrib.wise.util.wise_util import EmittingStream, WisePlot
+from orangecontrib.wise.util.wise_util import WisePlot
 
 class OWheight_profile_simulator(OWWidget):
     name = "Height Profile Simulator"

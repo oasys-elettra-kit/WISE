@@ -10,8 +10,9 @@ from orangewidget.settings import Setting
 from orangewidget.widget import OWAction
 from oasys.widgets import widget
 from oasys.widgets import gui as oasysgui
+from oasys.util.oasys_util import EmittingStream
 
-from orangecontrib.wise.util.wise_util import EmittingStream, WisePlot
+from orangecontrib.wise.util.wise_util import WisePlot
 from orangecontrib.wise.util.wise_objects import WiseOutput
 
 class WiseWidget(widget.OWWidget):

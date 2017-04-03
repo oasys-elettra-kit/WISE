@@ -7,8 +7,8 @@ from orangewidget.widget import OWAction
 from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui
 from oasys.widgets import congruence
+from oasys.util.oasys_util import EmittingStream
 
-from orangecontrib.wise.util.wise_util import EmittingStream
 from orangecontrib.wise.util.wise_objects import WiseOutput, WiseNumericalIntegrationParameters
 from orangecontrib.wise.widgets.gui.ow_wise_widget import WiseWidget
 from orangecontrib.wise.util.wise_propagator import WisePropagatorsChain, WisePropagationAlgorithms, WisePropagationParameters
