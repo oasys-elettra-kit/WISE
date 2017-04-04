@@ -4,7 +4,7 @@ import os
 
 from setuptools import find_packages, setup
 
-NAME = 'OASYS-WISE'
+NAME = 'OASYS1-WISE'
 VERSION = '1.0.23'
 ISRELEASED = True
 
@@ -38,7 +38,7 @@ SETUP_REQUIRES = (
 
 INSTALL_REQUIRES = (
     'setuptools',
-    'oasys>=1.0.0',
+    'oasys1>=1.0.0',
     'wiselib>=1.0.3',
 )
 
