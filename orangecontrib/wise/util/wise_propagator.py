@@ -138,8 +138,6 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
         source = parameters.source
         numerical_integration_parameters = parameters.numerical_integration_parameters
 
-        #print("\nPropagation Type = " + str(parameters.propagation_type) + "\n[0=Mirror Only, 1=Detector Only (no calculation of mirror E), 2=Mirror+Detector]\n")
-
         if parameters.propagation_type == WisePropagationParameters.MIRROR_ONLY or \
             parameters.propagation_type == WisePropagationParameters.MIRROR_AND_DETECTOR:
 
@@ -163,8 +161,6 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
             mir_s = Rayman.xy_to_s(mir_x, mir_y)
             mir_E = source.EvalField_XYLab(mir_x, mir_y)
 
-            #print("*** calculated new mir_x, mir_y, mir_s, mir_E")
-
         elif parameters.propagation_type == WisePropagationParameters.DETECTOR_ONLY:
             mir_x = parameters.wavefront.positions_x
             mir_y = parameters.wavefront.positions_y
@@ -172,8 +168,6 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
             mir_E = parameters.wavefront.electric_fields
             residuals = parameters.wavefront.residuals
             number_of_points = numerical_integration_parameters.calculated_number_of_points
-
-            #print("*** used mir_x, mir_y, mir_s, mir_E from mirror")
 
         if parameters.propagation_type == WisePropagationParameters.DETECTOR_ONLY or \
             parameters.propagation_type == WisePropagationParameters.MIRROR_AND_DETECTOR:
@@ -196,8 +190,6 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
             except ValueError as error:
                 if "cannot convert float NaN to integer" in str(error):
                     raise Exception("Inconsistent source parameters.\nMaybe " + "\u0394" + "Theta is too big.")
-
-            #print("*** calculated det_x, det_y, det_s, electric_fields, hew on detector")
 
             return HuygensIntegralPropagationOutput(mir_x,
                                                     mir_y,

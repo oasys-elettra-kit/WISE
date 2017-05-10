@@ -318,7 +318,7 @@ class OWDetector(WiseWidget):
                 number_of_points = self.number_of_points
 
             previous_numerical_integration_parameters = self.input_data.get_numerical_integration_parameters()
-            numerical_integration_parameters = WiseNumericalIntegrationParameters(self.calculation_type, detector_size, number_of_points)
+            numerical_integration_parameters = WiseNumericalIntegrationParameters(self.calculation_type, detector_size, int(number_of_points))
 
             propagation_type = WisePropagationParameters.MIRROR_AND_DETECTOR
 

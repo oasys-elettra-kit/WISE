@@ -245,6 +245,8 @@ class OWEllipticalMirror(WiseWidget):
             z_origin = elliptic_mirror.XYF1[0] + defocus*numpy.cos(alpha)
             y_origin = elliptic_mirror.XYF1[1] + defocus*numpy.sin(alpha)
 
+            print(numpy.degrees(theta), z_origin, y_origin)
+
             source.inner_wise_source = Optics.GaussianSource_1d(source.inner_wise_source.Lambda,
                                                                 source.inner_wise_source.Waist0,
                                                                 ZOrigin=z_origin,
