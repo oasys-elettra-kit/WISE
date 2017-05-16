@@ -175,6 +175,9 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
             det_x, det_y = elliptic_mirror.GetXY_TransversePlaneAtF2(numerical_integration_parameters.detector_size,
                                                                      number_of_points,
                                                                      parameters.defocus_sweep)
+
+            print("CAZZO!", numerical_integration_parameters.detector_size, number_of_points, parameters.defocus_sweep)
+
             det_s = Rayman.xy_to_s(det_x, det_y)
 
 

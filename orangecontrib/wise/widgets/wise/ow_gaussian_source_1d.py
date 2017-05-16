@@ -93,8 +93,8 @@ class OWGaussianSource1d(WiseWidget):
             self.x_origin = 0.0
             self.theta    = 0.0
 
-        wise_inner_source = Optics.GaussianSource_1d(self.source_lambda * 1e-9,
-                                                     self.source_sigma * self.workspace_units_to_m * numpy.sqrt(2),
+        wise_inner_source = Optics.GaussianSource_1d(Lambda=self.source_lambda * 1e-9,
+                                                     Waist0=self.source_sigma * self.workspace_units_to_m * numpy.sqrt(2),
                                                      ZOrigin = self.z_origin * self.workspace_units_to_m,
                                                      YOrigin =  self.x_origin * self.workspace_units_to_m,
                                                      Theta = numpy.radians(self.theta))

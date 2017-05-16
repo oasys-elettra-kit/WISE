@@ -245,13 +245,22 @@ class OWEllipticalMirror(WiseWidget):
             z_origin = elliptic_mirror.XYF1[0] + defocus*numpy.cos(alpha)
             y_origin = elliptic_mirror.XYF1[1] + defocus*numpy.sin(alpha)
 
-            print(numpy.degrees(theta), z_origin, y_origin)
+            print("theta (deg)", numpy.degrees(theta), "Z", z_origin, "Y", y_origin)
 
-            source.inner_wise_source = Optics.GaussianSource_1d(source.inner_wise_source.Lambda,
-                                                                source.inner_wise_source.Waist0,
-                                                                ZOrigin=z_origin,
-                                                                YOrigin=y_origin,
-                                                                Theta=theta)
+            if (isinstance(source.inner_wise_source, Optics.GaussianSource_1d)):
+                source.inner_wise_source = Optics.GaussianSource_1d(source.inner_wise_source.Lambda,
+                                                                    source.inner_wise_source.Waist0,
+                                                                    ZOrigin=z_origin,
+                                                                    YOrigin=y_origin,
+                                                                    Theta=theta)
+            elif (isinstance(source.inner_wise_source, Optics.PointSource_1d)):
+                source.inner_wise_source = Optics.GaussianSource_1d(source.inner_wise_source.Lambda,
+                                                                    XOrigin=z_origin,
+                                                                    YOrigin=y_origin)
+            else:
+                source.inner_wise_source.ZOrigin = z_origin
+                source.inner_wise_source.YOrigin = y_origin
+                source.inner_wise_source.ThetaPropagation = theta
 
         if self.calculation_type == WiseNumericalIntegrationParameters.AUTOMATIC:
             detector_size = self.detector_size*1e-6

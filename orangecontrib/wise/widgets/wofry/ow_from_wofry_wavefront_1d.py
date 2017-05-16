@@ -24,10 +24,15 @@ class OWFromWofryWavefront1d(WiseWidget):
     inputs = [("GenericWavefront1D", GenericWavefront1D, "set_input")]
 
     source_lambda = Setting(10)
+    source_position = Setting(0)
 
     z_origin = Setting(0.0)
     x_origin = Setting(0.0)
     theta = Setting(0.0)
+
+    longitudinal_correction = Setting(0.0)
+    transverse_correction = Setting(0.0)
+    delta_theta = Setting(0.0)
 
     wofry_wavefront = None
 
@@ -39,34 +44,62 @@ class OWFromWofryWavefront1d(WiseWidget):
 
         gui.separator(main_box, height=5)
 
+        gui.comboBox(main_box, self, "source_position", label="Source Position",
+                                            items=["User Defined", "Put Source at Mirror Focus"], labelWidth=260,
+                                            callback=self.set_SourcePosition, sendSelectedValue=False, orientation="horizontal")
+
         self.source_position_box_1 = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
+        self.source_position_box_2 = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
 
         self.le_z_origin = oasysgui.lineEdit(self.source_position_box_1, self, "z_origin", "Z Origin", labelWidth=260, valueType=float, orientation="horizontal")
         self.le_x_origin = oasysgui.lineEdit(self.source_position_box_1, self, "x_origin", "X Origin", labelWidth=260, valueType=float, orientation="horizontal")
         oasysgui.lineEdit(self.source_position_box_1, self, "theta", "Theta [deg]", labelWidth=260, valueType=float, orientation="horizontal")
+
+
+        self.le_longitudinal_correction = oasysgui.lineEdit(self.source_position_box_2, self, "longitudinal_correction", "Longitudinal correction", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_transverse_correction = oasysgui.lineEdit(self.source_position_box_2, self, "transverse_correction", "Transverse correction", labelWidth=260, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(self.source_position_box_2, self, "delta_theta", "\u0394" + "Theta [deg]", labelWidth=260, valueType=float, orientation="horizontal")
+
+        self.set_SourcePosition()
+
+    def set_SourcePosition(self):
+        self.source_position_box_1.setVisible(self.source_position == 0)
+        self.source_position_box_2.setVisible(self.source_position == 1)
 
     def after_change_workspace_units(self):
         label = self.le_z_origin.parent().layout().itemAt(0).widget()
         label.setText(label.text() + " [" + self.workspace_units_label + "]")
         label = self.le_x_origin.parent().layout().itemAt(0).widget()
         label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_longitudinal_correction.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
+        label = self.le_transverse_correction.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + self.workspace_units_label + "]")
 
 
     def check_fields(self):
         self.source_lambda = congruence.checkStrictlyPositiveNumber(self.source_lambda, "Wavelength")
-        self.theta = congruence.checkAngle(self.theta, "Theta")
+
+        if self.source_position == 0:
+            self.longitudinal_correction = congruence.checkNumber(self.longitudinal_correction, "Longitudinal Correction")
+            self.transverse_correction = congruence.checkNumber(self.transverse_correction, "Transverse Correction")
+            self.delta_theta = congruence.checkAngle(self.delta_theta, "\u0394" + "Theta")
+        else:
+            self.theta = congruence.checkAngle(self.theta, "Theta")
 
     def do_wise_calculation(self):
-        #self.z_origin = 0.0
-        #self.x_origin = 0.0
-        #self.theta    = 0.0
+        if self.source_position == 1:
+            self.z_origin = 0.0
+            self.x_origin = 0.0
+            self.theta    = 0.0
 
         wise_inner_source = WofryWavefrontSource_1d(wofry_wavefront=self.wofry_wavefront,
                                                     ZOrigin = self.z_origin * self.workspace_units_to_m,
                                                     YOrigin =  self.x_origin * self.workspace_units_to_m,
-                                                    Theta = numpy.radians(self.theta))
+                                                    Theta = numpy.radians(self.theta),
+                                                    units_converter=self.workspace_units_to_m)
 
-        data_to_plot = numpy.zeros((2, 100))
+        data_to_plot = numpy.zeros((2, self.wofry_wavefront.size()))
 
         data_to_plot[0, :] = self.wofry_wavefront._electric_field_array.get_abscissas()
         data_to_plot[1, :] = numpy.abs(self.wofry_wavefront._electric_field_array.get_values())**2
@@ -87,10 +120,14 @@ class OWFromWofryWavefront1d(WiseWidget):
 
     def extract_wise_output_from_calculation_output(self, calculation_output):
         wise_source = WiseSource(inner_wise_source=calculation_output[0])
-        wise_source.set_property("source_on_mirror_focus", False)
+        wise_source.set_property("source_on_mirror_focus", self.source_position == 1)
+
+        if self.source_position == 1:
+            wise_source.set_property("longitudinal_correction", self.longitudinal_correction)
+            wise_source.set_property("transverse_correction", self.transverse_correction)
+            wise_source.set_property("delta_theta", self.delta_theta)
 
         return WiseOutput(source=wise_source)
-
 
     def set_input(self, input_data):
         self.setStatusMessage("")
@@ -107,16 +144,16 @@ class WofryWavefrontSource_1d(object):
     #================================================
     #     __init__
     #================================================
-    def __init__(self, wofry_wavefront=GenericWavefront1D(), ZOrigin = 0, YOrigin = 0, Theta = 0):
+    def __init__(self, wofry_wavefront=GenericWavefront1D(), ZOrigin = 0, YOrigin = 0, Theta = 0, units_converter=1e-2):
         self.wofry_wavefront=wofry_wavefront
         self.Lambda = self.wofry_wavefront._wavelength
-
         self.Name = 'Wofry Wavefront @ %0.2fnm' % (self.Lambda *1e9)
 
         self.ZOrigin = ZOrigin
         self.YOrigin = YOrigin
-        self.RhoZOrigin = numpy.array([YOrigin, ZOrigin])
         self.ThetaPropagation = Theta
+
+        self.units_converter = units_converter
 
     #================================================
     #     EvalField
@@ -124,8 +161,8 @@ class WofryWavefrontSource_1d(object):
     def EvalField_XYLab(self, x = numpy.array(None), y = numpy.array(None)):
 
         wav_E = self.wofry_wavefront._electric_field_array.get_values()
-        wav_x = numpy.zeros(len(wav_E)) + self.YOrigin
-        wav_y = self.wofry_wavefront._electric_field_array.get_abscissas() + self.ZOrigin
+        wav_x = numpy.zeros(len(wav_E)) + self.ZOrigin
+        wav_y = self.wofry_wavefront._electric_field_array.get_abscissas()*self.units_converter + self.YOrigin
 
         electric_fields = Rayman.HuygensIntegral_1d_MultiPool(self.Lambda,
                                                               wav_E,
