@@ -72,9 +72,9 @@ class WiseWidget(widget.OWWidget):
 
         gui.rubber(self.controlArea)
 
-        self.main_tabs = gui.tabWidget(self.mainArea)
-        plot_tab = gui.createTabPage(self.main_tabs, "Results")
-        out_tab = gui.createTabPage(self.main_tabs, "Output")
+        self.main_tabs = oasysgui.TabWidget(self.mainArea)
+        plot_tab = oasysgui.createTabPage(self.main_tabs, "Results")
+        out_tab = oasysgui.createTabPage(self.main_tabs, "Output")
 
         self.view_box = oasysgui.widgetBox(plot_tab, "Results Options", addSpace=False, orientation="horizontal")
         view_box_1 = oasysgui.widgetBox(self.view_box, "", addSpace=False, orientation="vertical", width=350)
@@ -85,7 +85,7 @@ class WiseWidget(widget.OWWidget):
                                             callback=self.set_ViewType, sendSelectedValue=False, orientation="horizontal")
 
         self.tab = []
-        self.tabs = gui.tabWidget(plot_tab)
+        self.tabs = oasysgui.TabWidget(plot_tab)
 
         self.initializeTabs()
 
