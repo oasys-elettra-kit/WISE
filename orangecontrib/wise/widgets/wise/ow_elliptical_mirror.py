@@ -1,6 +1,7 @@
 import sys
 import numpy
-from PyQt4.QtGui import QApplication, QPalette, QColor, QFont, QMessageBox
+from PyQt5.QtGui import QPalette, QColor, QFont
+from PyQt5.QtWidgets import QApplication, QMessageBox
 from orangewidget import gui
 from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui

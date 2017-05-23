@@ -1,7 +1,8 @@
 import sys
 import numpy
-from PyQt4.QtGui import QPalette, QColor, QFont, QMessageBox, QFileDialog, QSlider
-from PyQt4.QtCore import QRect, Qt
+from PyQt5.QtGui import QPalette, QColor, QFont
+from PyQt5.QtWidgets import QMessageBox, QFileDialog, QSlider
+from PyQt5.QtCore import QRect, Qt
 from orangewidget import gui
 from orangewidget.widget import OWAction
 from orangewidget.settings import Setting

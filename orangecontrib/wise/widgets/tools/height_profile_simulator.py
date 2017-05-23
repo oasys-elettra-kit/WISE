@@ -2,9 +2,9 @@ import sys
 import numpy
 from silx.gui.plot.PlotWindow import PlotWindow
 
-from PyQt4.QtCore import QRect
-from PyQt4.QtGui import QTextEdit, QTextCursor, QApplication, QFont, QPalette, QColor, \
-    QMessageBox
+from PyQt5.QtCore import QRect
+from PyQt5.QtGui import QTextCursor, QFont, QPalette, QColor
+from PyQt5.QtWidgets import QTextEdit, QApplication, QMessageBox
 
 from srxraylib.metrology import profiles_simulation
 from oasys.widgets.widget import OWWidget

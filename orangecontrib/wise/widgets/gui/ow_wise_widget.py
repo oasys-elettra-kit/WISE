@@ -2,9 +2,9 @@ import sys
 
 from silx.gui.plot.PlotWindow import PlotWindow
 
-from PyQt4 import QtGui
-from PyQt4.QtCore import QRect
-from PyQt4.QtGui import QApplication
+from PyQt5 import QtGui, QtWidgets
+from PyQt5.QtCore import QRect
+from PyQt5.QtWidgets import QApplication
 
 from orangewidget import gui
 from orangewidget.settings import Setting
@@ -89,7 +89,7 @@ class WiseWidget(widget.OWWidget):
 
         self.initializeTabs()
 
-        self.wise_output = QtGui.QTextEdit()
+        self.wise_output = QtWidgets.QTextEdit()
         self.wise_output.setReadOnly(True)
 
         out_box = gui.widgetBox(out_tab, "System Output", addSpace=True, orientation="horizontal")
@@ -150,9 +150,9 @@ class WiseWidget(widget.OWWidget):
 
                 self.plot_results(self.plot_data)
             except Exception as exception:
-                QtGui.QMessageBox.critical(self, "Error",
+                QtWidgets.QMessageBox.critical(self, "Error",
                                            str(exception),
-                    QtGui.QMessageBox.Ok)
+                    QtWidgets.QMessageBox.Ok)
 
         self.progressBarFinished()
 
@@ -246,8 +246,8 @@ class WiseWidget(widget.OWWidget):
                 if not wise_output is None: self.send("wise_output", wise_output)
 
         except Exception as exception:
-            QtGui.QMessageBox.critical(self, "Error",
-                                       str(exception), QtGui.QMessageBox.Ok)
+            QtWidgets.QMessageBox.critical(self, "Error",
+                                       str(exception), QtWidgets.QMessageBox.Ok)
 
             self.setStatusMessage("Error!")
 

@@ -1,7 +1,6 @@
 __author__ = 'labx'
 
 import sys
-from PyQt4 import QtGui
 
 try:
     import matplotlib
