@@ -109,7 +109,7 @@ class OWheight_profile_simulator(OWWidget):
 
         gui.separator(self.controlArea)
 
-        tabs_setting = oasysgui.TabWidget(self.controlArea)
+        tabs_setting = oasysgui.tabWidget(self.controlArea)
         tabs_setting.setFixedHeight(self.TABS_AREA_HEIGHT)
         tabs_setting.setFixedWidth(self.CONTROL_AREA_WIDTH-5)
 
@@ -175,7 +175,7 @@ class OWheight_profile_simulator(OWWidget):
 
         gui.rubber(self.controlArea)
 
-        main_tabs = oasysgui.TabWidget(self.mainArea)
+        main_tabs = oasysgui.tabWidget(self.mainArea)
         self.plot_tab = oasysgui.createTabPage(main_tabs, "Results")
         self.plot_tab.setFixedHeight(self.IMAGE_HEIGHT)
         self.plot_tab.setFixedWidth(self.IMAGE_WIDTH)
