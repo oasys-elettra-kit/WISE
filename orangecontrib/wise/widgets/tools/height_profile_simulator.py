@@ -1,6 +1,5 @@
 import sys
 import numpy
-from silx.gui.plot.PlotWindow import PlotWindow
 
 from PyQt5.QtCore import QRect
 from PyQt5.QtGui import QTextCursor, QFont, QPalette, QColor
@@ -233,7 +232,7 @@ class OWheight_profile_simulator(OWWidget):
             title = ' Slope error rms in Z direction: %f $\mu$rad' % (sloperms*1e6)
 
             if self.plot_canvas is None:
-                self.plot_canvas = PlotWindow(roi=False, control=False, position=False)
+                self.plot_canvas = oasysgui.plotWindow(roi=False, control=False, position=False)
                 self.plot_canvas.setDefaultPlotLines(True)
                 self.plot_canvas.setActiveCurveColor(color='blue')
 

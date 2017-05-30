@@ -1,7 +1,5 @@
 import sys
 
-from silx.gui.plot.PlotWindow import PlotWindow
-
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import QRect
 from PyQt5.QtWidgets import QApplication
@@ -202,7 +200,7 @@ class WiseWidget(widget.OWWidget):
 
     def plot_histo(self, x, y, progressBarValue, tabs_canvas_index, plot_canvas_index, title="", xtitle="", ytitle="", log_x=False, log_y=False):
         if self.plot_canvas[plot_canvas_index] is None:
-            self.plot_canvas[plot_canvas_index] = PlotWindow(roi=False, control=True, position=True)
+            self.plot_canvas[plot_canvas_index] = oasysgui.plotWindow(roi=False, control=True, position=True)
             self.plot_canvas[plot_canvas_index].setDefaultPlotLines(True)
             self.plot_canvas[plot_canvas_index].setActiveCurveColor(color='blue')
             self.plot_canvas[plot_canvas_index].setXAxisLogarithmic(log_x)
