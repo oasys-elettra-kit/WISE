@@ -7,6 +7,7 @@ try:
 except AttributeError:
     from setuptools import find_packages, setup
 
+
 NAME = 'OASYS1-WISE'
 VERSION = '1.0.25'
 ISRELEASED = True
