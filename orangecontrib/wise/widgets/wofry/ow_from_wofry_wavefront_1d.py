@@ -1,6 +1,4 @@
-import sys
 import numpy
-from scipy.stats import norm
 from orangewidget import gui
 from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui
@@ -10,7 +8,6 @@ from orangecontrib.wise.util.wise_objects import WiseSource, WiseOutput
 from orangecontrib.wise.widgets.gui.ow_wise_widget import WiseWidget
 
 from wofry.propagator.wavefront1D.generic_wavefront import GenericWavefront1D
-
 
 class OWFromWofryWavefront1d(WiseWidget):
     name = "From Wofry Wavefront 1D"

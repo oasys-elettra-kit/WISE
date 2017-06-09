@@ -44,6 +44,7 @@ INSTALL_REQUIRES = (
     'setuptools',
     'oasys1>=1.0.0',
     'wiselib>=1.0.4',
+    'wofrywise'
 )
 
 PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
