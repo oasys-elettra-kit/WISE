@@ -187,7 +187,7 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
                                                                   mir_y,
                                                                   det_x,
                                                                   det_y,
-                                                                  parameters.n_pools)
+                                                                  int(parameters.n_pools))
             try:
                 hew = Rayman.HalfEnergyWidth_1d(abs(electric_fields)**2, Step = numpy.mean(numpy.diff(det_s)))
             except ValueError as error:

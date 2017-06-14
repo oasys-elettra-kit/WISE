@@ -126,9 +126,9 @@ class OWGaussianSource1d(WiseWidget):
         wise_source.set_property("source_on_mirror_focus", self.source_position == 1)
 
         if self.source_position == 1:
-            wise_source.set_property("longitudinal_correction", self.longitudinal_correction)
-            wise_source.set_property("transverse_correction", self.transverse_correction)
-            wise_source.set_property("delta_theta", self.delta_theta)
+            wise_source.set_property("longitudinal_correction", self.longitudinal_correction * self.workspace_units_to_m)
+            wise_source.set_property("transverse_correction", self.transverse_correction * self.workspace_units_to_m)
+            wise_source.set_property("delta_theta", numpy.radians(self.delta_theta))
 
         return WiseOutput(source=wise_source)
 

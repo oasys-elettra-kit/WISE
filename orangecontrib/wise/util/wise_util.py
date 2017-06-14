@@ -22,7 +22,6 @@ class WisePlot:
         if not xtitle is None: plot_window.setGraphXLabel(xtitle)
         if not ytitle is None: plot_window.setGraphYLabel(ytitle)
         if not title is None: plot_window.setGraphTitle(title)
-        plot_window.setDrawModeEnabled(True, 'rectangle')
-        plot_window.setInteractiveMode(True)
+        plot_window.setInteractiveMode(mode='zoom')
         plot_window.resetZoom()
         plot_window.replot()

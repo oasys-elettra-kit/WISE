@@ -230,7 +230,7 @@ class OWEllipticalMirror(WiseWidget):
         if source.get_property("source_on_mirror_focus"):
             longitudinal_correction = float(source.get_property("longitudinal_correction"))
             transverse_correction   = float(source.get_property("transverse_correction"))
-            delta_theta             = numpy.radians(float(source.get_property("delta_theta")))
+            delta_theta             = float(source.get_property("delta_theta"))
 
             if longitudinal_correction == 0.0:
                 if transverse_correction == 0.0:
