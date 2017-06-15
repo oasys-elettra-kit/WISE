@@ -176,10 +176,7 @@ class HuygensIntegralPropagator(AbstractWisePropagator):
                                                                      number_of_points,
                                                                      parameters.defocus_sweep)
 
-            print("CAZZO!", numerical_integration_parameters.detector_size, number_of_points, parameters.defocus_sweep)
-
             det_s = Rayman.xy_to_s(det_x, det_y)
-
 
             electric_fields = Rayman.HuygensIntegral_1d_MultiPool(source.Lambda,
                                                                   mir_E,

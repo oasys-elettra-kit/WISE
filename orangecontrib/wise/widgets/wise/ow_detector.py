@@ -1,4 +1,4 @@
-import sys
+import sys, threading
 import numpy
 from PyQt5.QtGui import QPalette, QColor, QFont
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QSlider
@@ -43,6 +43,9 @@ class OWDetector(WiseWidget):
 
     input_data = None
     run_calculation = True
+
+    _global_propagation_output = None
+    _global_propagation_parameter = None
 
     def set_input(self, input_data):
         self.setStatusMessage("")
@@ -402,6 +405,7 @@ class OWDetector(WiseWidget):
                 self.best_focus_slider.setValue(i)
 
                 if self.show_animation == 1:
+
                     self.plot_histo(propagation_output.det_s * 1e6,
                                     Amp(propagation_output.electric_fields)**2,
                                     i*progress_bar_increment,
@@ -557,3 +561,5 @@ class OWDetector(WiseWidget):
             QMessageBox.critical(self, "Error", str(exception), QMessageBox.Ok)
 
             self.setStatusMessage("Error!")
+
+
