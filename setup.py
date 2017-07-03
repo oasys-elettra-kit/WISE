@@ -9,7 +9,7 @@ except AttributeError:
 
 
 NAME = 'OASYS1-WISE'
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 ISRELEASED = True
 
 DESCRIPTION = 'WISE in Python'
@@ -44,7 +44,7 @@ INSTALL_REQUIRES = (
     'setuptools',
     'oasys1>=1.0.12',
     'wiselib>=1.0.5',
-    'wofrywise'
+    #'wofrywise'
 )
 
 PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
@@ -52,7 +52,7 @@ PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
 PACKAGE_DATA = {
     "orangecontrib.wise.widgets.wise":["icons/*.png", "icons/*.jpg"],
     "orangecontrib.wise.widgets.tools":["icons/*.png", "icons/*.jpg"],
-    "orangecontrib.wise.widgets.wofry":["icons/*.png", "icons/*.jpg"],
+    #"orangecontrib.wise.widgets.wofry":["icons/*.png", "icons/*.jpg"],
 }
 
 NAMESPACE_PACAKGES = ["orangecontrib", "orangecontrib.wise", "orangecontrib.wise.widgets"]
@@ -62,32 +62,37 @@ ENTRY_POINTS = {
     'oasys.widgets' : (
         "WISE = orangecontrib.wise.widgets.wise",
         "WISE Tools = orangecontrib.wise.widgets.tools",
-        "WISE Wofry = orangecontrib.wise.widgets.wofry",
+        #"WISE Wofry = orangecontrib.wise.widgets.wofry",
     ),
 }
 
 if __name__ == '__main__':
-    setup(
-          name = NAME,
-          version = VERSION,
-          description = DESCRIPTION,
-          long_description = LONG_DESCRIPTION,
-          author = AUTHOR,
-          author_email = AUTHOR_EMAIL,
-          url = URL,
-          download_url = DOWNLOAD_URL,
-          license = LICENSE,
-          keywords = KEYWORDS,
-          classifiers = CLASSIFIERS,
-          packages = PACKAGES,
-          package_data = PACKAGE_DATA,
-          #          py_modules = PY_MODULES,
-          setup_requires = SETUP_REQUIRES,
-          install_requires = INSTALL_REQUIRES,
-          #extras_require = EXTRAS_REQUIRE,
-          #dependency_links = DEPENDENCY_LINKS,
-          entry_points = ENTRY_POINTS,
-          namespace_packages=NAMESPACE_PACAKGES,
-          include_package_data = True,
-          zip_safe = False,
-          )
+    try:
+        import PyMca5, PyQt4
+
+        raise NotImplementedError("This version of WISE doesn't work with Oasys1 beta.\nPlease install OASYS1 final release: http://www.elettra.eu/oasys.html")
+    except:
+        setup(
+              name = NAME,
+              version = VERSION,
+              description = DESCRIPTION,
+              long_description = LONG_DESCRIPTION,
+              author = AUTHOR,
+              author_email = AUTHOR_EMAIL,
+              url = URL,
+              download_url = DOWNLOAD_URL,
+              license = LICENSE,
+              keywords = KEYWORDS,
+              classifiers = CLASSIFIERS,
+              packages = PACKAGES,
+              package_data = PACKAGE_DATA,
+              #          py_modules = PY_MODULES,
+              setup_requires = SETUP_REQUIRES,
+              install_requires = INSTALL_REQUIRES,
+              #extras_require = EXTRAS_REQUIRE,
+              #dependency_links = DEPENDENCY_LINKS,
+              entry_points = ENTRY_POINTS,
+              namespace_packages=NAMESPACE_PACAKGES,
+              include_package_data = True,
+              zip_safe = False,
+              )
