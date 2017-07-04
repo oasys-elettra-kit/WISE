@@ -9,7 +9,7 @@ except AttributeError:
 
 
 NAME = 'OASYS1-WISE'
-VERSION = '1.1.1'
+VERSION = '1.1.2'
 ISRELEASED = True
 
 DESCRIPTION = 'WISE in Python'
@@ -67,10 +67,12 @@ ENTRY_POINTS = {
 }
 
 if __name__ == '__main__':
+    is_beta = False
+
     try:
         import PyMca5, PyQt4
 
-        raise NotImplementedError("This version of WISE doesn't work with Oasys1 beta.\nPlease install OASYS1 final release: http://www.elettra.eu/oasys.html")
+        is_beta = True
     except:
         setup(
               name = NAME,
@@ -96,3 +98,5 @@ if __name__ == '__main__':
               include_package_data = True,
               zip_safe = False,
               )
+
+    if is_beta: raise NotImplementedError("This version of WISE doesn't work with Oasys1 beta.\nPlease install OASYS1 final release: http://www.elettra.eu/oasys.html")
