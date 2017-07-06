@@ -44,7 +44,7 @@ INSTALL_REQUIRES = (
     'setuptools',
     'oasys1>=1.0.12',
     'wiselib>=1.0.5',
-    #'wofrywise'
+    'wofrywise'
 )
 
 PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
@@ -52,7 +52,7 @@ PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
 PACKAGE_DATA = {
     "orangecontrib.wise.widgets.wise":["icons/*.png", "icons/*.jpg"],
     "orangecontrib.wise.widgets.tools":["icons/*.png", "icons/*.jpg"],
-    #"orangecontrib.wise.widgets.wofry":["icons/*.png", "icons/*.jpg"],
+    "orangecontrib.wise.widgets.wofry":["icons/*.png", "icons/*.jpg"],
 }
 
 NAMESPACE_PACAKGES = ["orangecontrib", "orangecontrib.wise", "orangecontrib.wise.widgets"]
@@ -62,7 +62,7 @@ ENTRY_POINTS = {
     'oasys.widgets' : (
         "WISE = orangecontrib.wise.widgets.wise",
         "WISE Tools = orangecontrib.wise.widgets.tools",
-        #"WISE Wofry = orangecontrib.wise.widgets.wofry",
+        "WISE Wofry = orangecontrib.wise.widgets.wofry",
     ),
 }
 
