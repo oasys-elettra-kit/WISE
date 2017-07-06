@@ -101,7 +101,7 @@ class OWWiseSourceToWofryWavefront1d(widget.OWWidget):
                                                                                         WisePropagationAlgorithms.HuygensIntegral)
 
                     wavefront = WiseWavefront(wavelength=input_data.get_source().inner_wise_source.Lambda,
-                                              positions=propagation_output.det_s/self.workspace_units_to_m,
+                                              positions=propagation_output.det_s,
                                               electric_fields=propagation_output.electric_fields,
                                               residuals=numpy.zeros(self.number_of_points))
 
