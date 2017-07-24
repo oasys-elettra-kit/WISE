@@ -18,7 +18,7 @@ class OWWiseSourceToWofryWavefront1d(widget.OWWidget):
     name = "Wise Source To Wofry Wavefront 1D"
     id = "toWofryWavefront1D"
     description = "Wise Source To Wofry Wavefront 1D"
-    icon = "icons/to_wofry_wavefront_1d.png"
+    icon = "icons/source_to_wofry_wavefront_1d.png"
     priority = 2
     category = ""
     keywords = ["wise", "gaussian"]

@@ -1,7 +1,7 @@
 import sys
 import numpy
 from PyQt5.QtGui import QPalette, QColor, QFont
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMessageBox, QInputDialog
 from orangewidget import gui
 from orangewidget.settings import Setting
 from oasys.widgets import gui as oasysgui
@@ -11,13 +11,17 @@ from orangecontrib.wise.util.wise_objects import WiseOpticalElement, WiseWavefro
 from orangecontrib.wise.widgets.gui.ow_wise_widget import WiseWidget
 from orangecontrib.wise.util.wise_propagator import WisePropagatorsChain, WisePropagationAlgorithms, WisePropagationParameters
 
+from syned.widget.widget_decorator import WidgetDecorator
+from syned.beamline.optical_elements.mirrors.mirror import Mirror
+from syned.beamline.shape import Ellipsoid
+
 from wiselib import Optics
-from  wiselib.Rayman import Amp, Cyc
+from wiselib.Rayman import Amp, Cyc
 
 SOURCE = 0
 OE = 1
 
-class OWEllipticalMirror(WiseWidget):
+class OWEllipticalMirror(WiseWidget, WidgetDecorator):
     name = "EllipticalMirror"
     id = "EllipticalMirror"
     description = "EllipticalMirror"
@@ -27,6 +31,8 @@ class OWEllipticalMirror(WiseWidget):
     keywords = ["wise", "elliptical"]
 
     inputs = [("Input", WiseOutput, "set_input"), ("PreInput", WisePreInputData, "set_pre_input")]
+
+    WidgetDecorator.append_syned_input_data(inputs)
 
     f1 = Setting(98000)
     f2 = Setting(1200)
@@ -400,3 +406,41 @@ class OWEllipticalMirror(WiseWidget):
                           optical_element=calculation_output[1],
                           wavefront=calculation_output[2],
                           numerical_integration_parameters=calculation_output[3])
+
+
+    def receive_syned_data(self, data):
+        if not data is None:
+            beamline_element = data.get_beamline_element_at(-1)
+
+            if beamline_element is None:
+                raise Exception("Syned Data not correct: Empty Beamline Element")
+
+            optical_element = beamline_element._optical_element
+
+            if optical_element is None:
+                raise Exception("Syned Data not correct: Empty Optical Element")
+
+            if not isinstance(optical_element, Mirror):
+                raise Exception("Syned Data not correct: Optical Element is not a Mirror")
+
+            if not isinstance(optical_element._surface_shape, Ellipsoid):
+                raise Exception("Syned Data not correct: Mirror Surface Shape is not Elliptical")
+
+            self.alpha = round(numpy.degrees(0.5*numpy.pi-beamline_element._coordinates._angle_radial), 4)
+
+            boundaries = optical_element._boundary_shape.get_boundaries()
+
+            tangential_size=round(abs(boundaries[3] - boundaries[2])/self.workspace_units_to_m, 6)
+            sagittal_size=round(abs(boundaries[1] - boundaries[0])/self.workspace_units_to_m, 6)
+
+            axis = QInputDialog.getItem(self, "Projection Axis", "Select Direction", ("Horizontal", "Vertical"), 0, False)
+
+            if axis == 0:
+                self.length = sagittal_size
+            else:
+                self.length = tangential_size
+
+            p, q = optical_element._surface_shape.get_p_q(numpy.radians(self.alpha))
+
+            self.f1 = numpy.round(p/self.workspace_units_to_m, 6)
+            self.f2 = numpy.round(q/self.workspace_units_to_m, 6)
