@@ -17,4 +17,4 @@ BACKGROUND = "#FE2E2E"
 
 ICON = "icons/wise.png"
 
-PRIORITY = 4002
+PRIORITY = 4003
