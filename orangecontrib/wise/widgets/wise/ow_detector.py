@@ -73,54 +73,60 @@ class OWDetector(WiseWidget):
         self.view_type = 1
         self.button_box.setVisible(False)
 
-        main_box = oasysgui.widgetBox(self.controlArea, "Detector Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
+        self.tabs_setting = oasysgui.tabWidget(self.controlArea)
+        self.tabs_setting.setFixedHeight(self.TABS_AREA_HEIGHT)
+        self.tabs_setting.setFixedWidth(self.CONTROL_AREA_WIDTH-5)
 
+        self.tab_bas = oasysgui.createTabPage(self.tabs_setting, "Detector Setting")
+        self.tab_pro = oasysgui.createTabPage(self.tabs_setting, "Advanced Setting")
 
-        oasysgui.lineEdit(main_box, self, "detector_size", "Detector Size [" + u"\u03BC" + "m]", labelWidth=260, valueType=float, orientation="horizontal")
+        main_box = oasysgui.widgetBox(self.tab_bas, "Detector Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-20)
+
+        oasysgui.lineEdit(main_box, self, "detector_size", "Detector Size [" + u"\u03BC" + "m]", labelWidth=240, valueType=float, orientation="horizontal")
 
         gui.separator(main_box)
 
         gui.comboBox(main_box, self, "calculation_type", label="Numeric Integration",
-                     items=["Automatic Number of Points", "User Defined Number of Points"], labelWidth=160,
+                     items=["Automatic Number of Points", "User Defined Number of Points"], labelWidth=140,
                      callback=self.set_CalculationType, sendSelectedValue=False, orientation="horizontal")
 
-        self.detector_box = oasysgui.widgetBox(main_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-25, height=30)
+        self.detector_box = oasysgui.widgetBox(main_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-40, height=30)
 
-        le_calculated_number_of_points = oasysgui.lineEdit(self.detector_box, self, "calculated_number_of_points", "Calculated Number of Points", labelWidth=260, valueType=float, orientation="horizontal")
+        le_calculated_number_of_points = oasysgui.lineEdit(self.detector_box, self, "calculated_number_of_points", "Calculated Number of Points", labelWidth=240, valueType=float, orientation="horizontal")
         le_calculated_number_of_points.setReadOnly(True)
         font = QFont(le_calculated_number_of_points.font())
         font.setBold(True)
         le_calculated_number_of_points.setFont(font)
         palette = QPalette(le_calculated_number_of_points.palette())
         palette.setColor(QPalette.Text, QColor('dark blue'))
-        palette.setColor(QPalette.Base, QColor(243, 240, 160))
+        palette.setColor(QPalette.Base, QColor(243, 240, 140))
         le_calculated_number_of_points.setPalette(palette)
 
-        self.number_box = oasysgui.widgetBox(main_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-25, height=30)
+        self.number_box = oasysgui.widgetBox(main_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-40, height=30)
 
-        oasysgui.lineEdit(self.number_box, self, "number_of_points", "Number of Points", labelWidth=260, valueType=int, orientation="horizontal")
+        oasysgui.lineEdit(self.number_box, self, "number_of_points", "Number of Points", labelWidth=240, valueType=int, orientation="horizontal")
 
         self.set_CalculationType()
 
-        self.le_oe_f2 = oasysgui.lineEdit(main_box, self, "oe_f2", "O.E. F2", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_oe_f2 = oasysgui.lineEdit(main_box, self, "oe_f2", "O.E. F2", labelWidth=240, valueType=float, orientation="horizontal")
         self.le_oe_f2.setReadOnly(True)
         font = QFont(self.le_oe_f2.font())
         font.setBold(True)
         self.le_oe_f2.setFont(font)
         palette = QPalette(self.le_oe_f2.palette())
         palette.setColor(QPalette.Text, QColor('dark blue'))
-        palette.setColor(QPalette.Base, QColor(243, 240, 160))
+        palette.setColor(QPalette.Base, QColor(243, 240, 140))
         self.le_oe_f2.setPalette(palette)
 
-        self.le_defocus_sweep = oasysgui.lineEdit(main_box, self, "defocus_sweep", "Defocus sweep", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_defocus_sweep = oasysgui.lineEdit(main_box, self, "defocus_sweep", "Defocus sweep", labelWidth=240, valueType=float, orientation="horizontal")
 
         gui.button(main_box, self, "Compute", callback=self.compute, height=35)
 
-        best_focus_box = oasysgui.widgetBox(self.controlArea, "Best Focus Calculation", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
+        best_focus_box = oasysgui.widgetBox(self.tab_bas, "Best Focus Calculation", orientation="vertical", width=self.CONTROL_AREA_WIDTH-20)
 
-        self.le_defocus_start = oasysgui.lineEdit(best_focus_box, self, "defocus_start", "Defocus sweep start", labelWidth=260, valueType=float, orientation="horizontal")
-        self.le_defocus_stop  = oasysgui.lineEdit(best_focus_box, self, "defocus_stop", "Defocus sweep stop", labelWidth=260, valueType=float, orientation="horizontal")
-        self.le_defocus_step  = oasysgui.lineEdit(best_focus_box, self, "defocus_step", "Defocus sweep step", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_defocus_start = oasysgui.lineEdit(best_focus_box, self, "defocus_start", "Defocus sweep start", labelWidth=240, valueType=float, orientation="horizontal")
+        self.le_defocus_stop  = oasysgui.lineEdit(best_focus_box, self, "defocus_stop", "Defocus sweep stop", labelWidth=240, valueType=float, orientation="horizontal")
+        self.le_defocus_step  = oasysgui.lineEdit(best_focus_box, self, "defocus_step", "Defocus sweep step", labelWidth=240, valueType=float, orientation="horizontal")
 
         gui.separator(best_focus_box, height=5)
 
@@ -129,7 +135,7 @@ class OWDetector(WiseWidget):
         gui.separator(best_focus_box, height=5)
 
 
-        button_box = oasysgui.widgetBox(best_focus_box, "", orientation="horizontal", width=self.CONTROL_AREA_WIDTH-25)
+        button_box = oasysgui.widgetBox(best_focus_box, "", orientation="horizontal", width=self.CONTROL_AREA_WIDTH-40)
 
         gui.button(button_box, self, "Find Best Focus Position", callback=self.do_best_focus_calculation, height=35)
         stop_button = gui.button(button_box, self, "Interrupt", callback=self.stop_best_focus_calculation, height=35)
@@ -143,16 +149,16 @@ class OWDetector(WiseWidget):
         self.save_button = gui.button(best_focus_box, self, "Save Best Focus Calculation Complete Results", callback=self.save_best_focus_results, height=35)
         self.save_button.setEnabled(False)
 
-        parallel_box = oasysgui.widgetBox(self.controlArea, "Parallel Computing", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
+        parallel_box = oasysgui.widgetBox(self.tab_pro, "Parallel Computing", orientation="vertical", width=self.CONTROL_AREA_WIDTH-20)
 
         gui.comboBox(parallel_box, self, "use_multipool", label="Use Parallel Processing",
-                     items=["No", "Yes"], labelWidth=260,
+                     items=["No", "Yes"], labelWidth=240,
                      callback=self.set_Multipool, sendSelectedValue=False, orientation="horizontal")
 
-        self.use_multipool_box = oasysgui.widgetBox(parallel_box, "", addSpace=True, orientation="vertical", height=30, width=self.CONTROL_AREA_WIDTH-25)
-        self.use_multipool_box_empty = oasysgui.widgetBox(parallel_box, "", addSpace=True, orientation="vertical", height=30, width=self.CONTROL_AREA_WIDTH-25)
+        self.use_multipool_box = oasysgui.widgetBox(parallel_box, "", addSpace=True, orientation="vertical", height=30, width=self.CONTROL_AREA_WIDTH-40)
+        self.use_multipool_box_empty = oasysgui.widgetBox(parallel_box, "", addSpace=True, orientation="vertical", height=30, width=self.CONTROL_AREA_WIDTH-40)
 
-        oasysgui.lineEdit(self.use_multipool_box, self, "n_pools", "Nr. Parallel Processes", labelWidth=260, valueType=int, orientation="horizontal")
+        oasysgui.lineEdit(self.use_multipool_box, self, "n_pools", "Nr. Parallel Processes", labelWidth=240, valueType=int, orientation="horizontal")
 
         self.set_Multipool()
 

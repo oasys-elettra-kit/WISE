@@ -126,7 +126,7 @@ class OWheight_profile_simulator(OWWidget):
 
         gui.separator(input_box_l)
 
-        self.kind_of_profile_y_box_1 = oasysgui.widgetBox(input_box_l, "", addSpace=True, orientation="vertical", height=230)
+        self.kind_of_profile_y_box_1 = oasysgui.widgetBox(input_box_l, "", addSpace=False, orientation="vertical", height=230)
 
         self.le_dimension_y = oasysgui.lineEdit(self.kind_of_profile_y_box_1, self, "dimension_y", "Dimensions",
                            labelWidth=260, valueType=float, orientation="horizontal")
@@ -135,12 +135,12 @@ class OWheight_profile_simulator(OWWidget):
         oasysgui.lineEdit(self.kind_of_profile_y_box_1, self, "montecarlo_seed_y", "Monte Carlo initial seed", labelWidth=260,
                            valueType=int, orientation="horizontal")
 
-        self.kind_of_profile_y_box_1_1 = oasysgui.widgetBox(self.kind_of_profile_y_box_1, "", addSpace=True, orientation="vertical")
+        self.kind_of_profile_y_box_1_1 = oasysgui.widgetBox(self.kind_of_profile_y_box_1, "", addSpace=False, orientation="vertical")
 
         oasysgui.lineEdit(self.kind_of_profile_y_box_1_1, self, "power_law_exponent_beta_y", "Beta Value",
                            labelWidth=260, valueType=float, orientation="horizontal")
 
-        self.kind_of_profile_y_box_1_2 = oasysgui.widgetBox(self.kind_of_profile_y_box_1, "", addSpace=True, orientation="vertical")
+        self.kind_of_profile_y_box_1_2 = oasysgui.widgetBox(self.kind_of_profile_y_box_1, "", addSpace=False, orientation="vertical")
 
         self.le_correlation_length_y = oasysgui.lineEdit(self.kind_of_profile_y_box_1_2, self, "correlation_length_y", "Correlation Length",
                            labelWidth=260, valueType=float, orientation="horizontal")
@@ -159,18 +159,19 @@ class OWheight_profile_simulator(OWWidget):
 
         self.output_box = oasysgui.widgetBox(tab_input, "Outputs", addSpace=True, orientation="vertical")
 
-        self.select_file_box = oasysgui.widgetBox(self.output_box, "", addSpace=True, orientation="horizontal")
+        self.select_file_box = oasysgui.widgetBox(self.output_box, "", addSpace=False, orientation="horizontal")
 
         self.le_heigth_profile_file_name = oasysgui.lineEdit(self.select_file_box, self, "heigth_profile_file_name", "Output File Name",
                                                         labelWidth=120, valueType=str, orientation="horizontal")
 
         gui.button(self.select_file_box, self, "...", callback=self.selectFile)
 
-        self.shadow_output = QTextEdit()
-        self.shadow_output.setReadOnly(True)
+        self.wise_output = QTextEdit()
+        self.wise_output.setReadOnly(True)
+        self.wise_output.setStyleSheet("background-color: white;")
 
         out_box = oasysgui.widgetBox(tab_out, "System Output", addSpace=True, orientation="horizontal", height=580)
-        out_box.layout().addWidget(self.shadow_output)
+        out_box.layout().addWidget(self.wise_output)
 
         gui.rubber(self.controlArea)
 
@@ -289,11 +290,11 @@ class OWheight_profile_simulator(OWWidget):
         congruence.checkDir(self.heigth_profile_file_name)
 
     def writeStdOut(self, text):
-        cursor = self.shadow_output.textCursor()
+        cursor = self.wise_output.textCursor()
         cursor.movePosition(QTextCursor.End)
         cursor.insertText(text)
-        self.shadow_output.setTextCursor(cursor)
-        self.shadow_output.ensureCursorVisible()
+        self.wise_output.setTextCursor(cursor)
+        self.wise_output.ensureCursorVisible()
 
     def selectFile(self):
         self.le_heigth_profile_file_name.setText(oasysgui.selectFileFromDialog(self, self.heigth_profile_file_name, "Select Output File", file_extension_filter="Data Files (*.dat *.txt)"))

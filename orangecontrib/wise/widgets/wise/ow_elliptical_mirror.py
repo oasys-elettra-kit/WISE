@@ -86,64 +86,72 @@ class OWEllipticalMirror(WiseWidget, WidgetDecorator):
                 self.set_UseRoughness()
 
     def build_gui(self):
-        main_box = oasysgui.widgetBox(self.controlArea, "Elliptical Mirror Input Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
 
-        self.le_f1 = oasysgui.lineEdit(main_box, self, "f1", "F1", labelWidth=260, valueType=float, orientation="horizontal")
-        self.le_f2 = oasysgui.lineEdit(main_box, self, "f2", "F2", labelWidth=260, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(main_box, self, "alpha", "Incidence Angle [deg]", labelWidth=260, valueType=float, orientation="horizontal")
-        self.le_length = oasysgui.lineEdit(main_box, self, "length", "Length", labelWidth=260, valueType=float, orientation="horizontal")
+        self.tabs_setting = oasysgui.tabWidget(self.controlArea)
+        self.tabs_setting.setFixedHeight(self.TABS_AREA_HEIGHT)
+        self.tabs_setting.setFixedWidth(self.CONTROL_AREA_WIDTH-5)
 
-        figure_error_box = oasysgui.widgetBox(self.controlArea, "Figure Error Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
+        self.tab_bas = oasysgui.createTabPage(self.tabs_setting, "Mirror Setting")
+        self.tab_pro = oasysgui.createTabPage(self.tabs_setting, "Calculation Setting")
+
+        main_box = oasysgui.widgetBox(self.tab_bas, "Elliptical Mirror Input Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-20)
+
+        self.le_f1 = oasysgui.lineEdit(main_box, self, "f1", "F1", labelWidth=240, valueType=float, orientation="horizontal")
+        self.le_f2 = oasysgui.lineEdit(main_box, self, "f2", "F2", labelWidth=240, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(main_box, self, "alpha", "Incidence Angle [deg]", labelWidth=240, valueType=float, orientation="horizontal")
+        self.le_length = oasysgui.lineEdit(main_box, self, "length", "Length", labelWidth=240, valueType=float, orientation="horizontal")
+
+        figure_error_box = oasysgui.widgetBox(self.tab_bas, "Figure Error Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-20)
 
 
         gui.comboBox(figure_error_box, self, "use_figure_error", label="Error Profile",
-                     items=["None", "User Defined"], labelWidth=260,
+                     items=["None", "User Defined"], labelWidth=240,
                      callback=self.set_UseFigureError, sendSelectedValue=False, orientation="horizontal")
 
-        self.use_figure_error_box = oasysgui.widgetBox(figure_error_box, "", addSpace=True, orientation="vertical", height=70)
-        self.use_figure_error_box_empty = oasysgui.widgetBox(figure_error_box, "", addSpace=True, orientation="vertical", height=70)
+        self.use_figure_error_box = oasysgui.widgetBox(figure_error_box, "", addSpace=True, orientation="vertical", height=80)
+        self.use_figure_error_box_empty = oasysgui.widgetBox(figure_error_box, "", addSpace=True, orientation="vertical", height=80)
 
 
         file_box =  oasysgui.widgetBox(self.use_figure_error_box, "", addSpace=False, orientation="horizontal")
         self.le_figure_error_file = oasysgui.lineEdit(file_box, self, "figure_error_file", "File Name", labelWidth=100, valueType=str, orientation="horizontal")
         gui.button(file_box, self, "...", callback=self.selectFigureErrorFile)
 
-        self.le_figure_error_step = oasysgui.lineEdit(self.use_figure_error_box, self, "figure_error_step", "Step", labelWidth=260, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(self.use_figure_error_box, self, "figure_error_um_conversion", "user file u.m. to [m] factor", labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_figure_error_step = oasysgui.lineEdit(self.use_figure_error_box, self, "figure_error_step", "Step", labelWidth=240, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(self.use_figure_error_box, self, "figure_error_um_conversion", "user file u.m. to [m] factor", labelWidth=240, valueType=float, orientation="horizontal")
 
         self.set_UseFigureError()
 
         gui.comboBox(figure_error_box, self, "use_roughness", label="roughness",
-                     items=["None", "User Defined"], labelWidth=260,
+                     items=["None", "User Defined"], labelWidth=240,
                      callback=self.set_UseRoughness, sendSelectedValue=False, orientation="horizontal")
 
-        self.use_roughness_box = oasysgui.widgetBox(figure_error_box, "", addSpace=True, orientation="vertical", height=100)
-        self.use_roughness_box_empty = oasysgui.widgetBox(figure_error_box, "", addSpace=True, orientation="vertical", height=100)
+        self.use_roughness_box = oasysgui.widgetBox(figure_error_box, "", addSpace=True, orientation="vertical", height=110)
+        self.use_roughness_box_empty = oasysgui.widgetBox(figure_error_box, "", addSpace=True, orientation="vertical", height=110)
 
         file_box = oasysgui.widgetBox(self.use_roughness_box, "", addSpace=False, orientation="horizontal")
         self.le_roughness_file = oasysgui.lineEdit(file_box, self, "roughness_file", "File Name", labelWidth=100, valueType=str, orientation="horizontal")
         gui.button(file_box, self, "...", callback=self.selectroughnessFile)
 
-        oasysgui.lineEdit(self.use_roughness_box, self, "roughness_x_scaling", "x user file u.m. to [m]   factor", labelWidth=260, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(self.use_roughness_box, self, "roughness_y_scaling", "y user file u.m. to [m^3] factor", labelWidth=260, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(self.use_roughness_box, self, "roughness_x_scaling", "x user file u.m. to [m]   factor", labelWidth=240, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(self.use_roughness_box, self, "roughness_y_scaling", "y user file u.m. to [m^3] factor", labelWidth=240, valueType=float, orientation="horizontal")
 
         gui.comboBox(self.use_roughness_box, self, "roughness_fit_data", label="Fit numeric data with power law",
-                     items=["No", "Yes"], labelWidth=260, sendSelectedValue=False, orientation="horizontal")
+                     items=["No", "Yes"], labelWidth=240, sendSelectedValue=False, orientation="horizontal")
 
         self.set_UseRoughness()
 
-        calculation_box = oasysgui.widgetBox(self.controlArea, "Calculation Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5)
+        calculation_box = oasysgui.widgetBox(self.tab_pro, "Calculation Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-20)
 
         gui.comboBox(calculation_box, self, "calculation_type", label="Numeric Integration",
-                     items=["Automatic Number of Points", "User Defined Number of Points"], labelWidth=160,
+                     items=["Automatic Number of Points", "User Defined Number of Points"], labelWidth=140,
                      callback=self.set_CalculationType, sendSelectedValue=False, orientation="horizontal")
 
 
-        self.detector_box = oasysgui.widgetBox(calculation_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-25)
+        self.detector_box = oasysgui.widgetBox(calculation_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-40)
 
-        oasysgui.lineEdit(self.detector_box, self, "detector_size", "(Hypotetic) Detector Size [" + u"\u03BC" + "m]", labelWidth=260, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(self.detector_box, self, "detector_size", "(Hypotetic) Detector Size [" + u"\u03BC" + "m]", labelWidth=240, valueType=float, orientation="horizontal")
 
-        le_calculated_number_of_points = oasysgui.lineEdit(self.detector_box, self, "calculated_number_of_points", "Calculated Number of Points", labelWidth=260, valueType=float, orientation="horizontal")
+        le_calculated_number_of_points = oasysgui.lineEdit(self.detector_box, self, "calculated_number_of_points", "Calculated Number of Points", labelWidth=240, valueType=float, orientation="horizontal")
         le_calculated_number_of_points.setReadOnly(True)
         font = QFont(le_calculated_number_of_points.font())
         font.setBold(True)
@@ -153,9 +161,9 @@ class OWEllipticalMirror(WiseWidget, WidgetDecorator):
         palette.setColor(QPalette.Base, QColor(243, 240, 160))
         le_calculated_number_of_points.setPalette(palette)
 
-        self.number_box = oasysgui.widgetBox(calculation_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-25)
+        self.number_box = oasysgui.widgetBox(calculation_box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-40)
 
-        oasysgui.lineEdit(self.number_box, self, "number_of_points", "Number of Points", labelWidth=260, valueType=int, orientation="horizontal")
+        oasysgui.lineEdit(self.number_box, self, "number_of_points", "Number of Points", labelWidth=240, valueType=int, orientation="horizontal")
 
         self.set_CalculationType()
 

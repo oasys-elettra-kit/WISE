@@ -34,7 +34,7 @@ class OWGaussianSource1d(WiseWidget):
 
     def build_gui(self):
 
-        main_box = oasysgui.widgetBox(self.controlArea, "Gaussian Source 1D Input Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5, height=200)
+        main_box = oasysgui.widgetBox(self.controlArea, "Gaussian Source 1D Input Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5, height=220)
 
         oasysgui.lineEdit(main_box, self, "source_lambda", "Wavelength [nm]", labelWidth=260, valueType=float, orientation="horizontal")
         self.le_source_sigma = oasysgui.lineEdit(main_box, self, "source_sigma", "Sigma", labelWidth=260, valueType=float, orientation="horizontal")
@@ -45,8 +45,8 @@ class OWGaussianSource1d(WiseWidget):
                                             items=["User Defined", "Put Source at Mirror Focus"], labelWidth=260,
                                             callback=self.set_SourcePosition, sendSelectedValue=False, orientation="horizontal")
 
-        self.source_position_box_1 = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
-        self.source_position_box_2 = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
+        self.source_position_box_1 = oasysgui.widgetBox(main_box, "", addSpace=False, orientation="vertical", height=80)
+        self.source_position_box_2 = oasysgui.widgetBox(main_box, "", addSpace=False, orientation="vertical", height=80)
 
         self.le_z_origin = oasysgui.lineEdit(self.source_position_box_1, self, "z_origin", "Z Origin", labelWidth=260, valueType=float, orientation="horizontal")
         self.le_x_origin = oasysgui.lineEdit(self.source_position_box_1, self, "x_origin", "X Origin", labelWidth=260, valueType=float, orientation="horizontal")

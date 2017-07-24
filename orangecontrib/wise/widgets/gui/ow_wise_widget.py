@@ -89,11 +89,12 @@ class WiseWidget(widget.OWWidget):
 
         self.wise_output = QtWidgets.QTextEdit()
         self.wise_output.setReadOnly(True)
+        self.wise_output.setStyleSheet("background-color: white;")
 
         out_box = gui.widgetBox(out_tab, "System Output", addSpace=True, orientation="horizontal")
         out_box.layout().addWidget(self.wise_output)
 
-        self.wise_output.setFixedHeight(600)
+        self.wise_output.setFixedHeight(590)
         self.wise_output.setFixedWidth(600)
 
         gui.rubber(self.mainArea)
