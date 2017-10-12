@@ -98,7 +98,7 @@ class OWFromWofryWavefront1d(WiseWidget):
 
         data_to_plot = numpy.zeros((2, self.wofry_wavefront.size()))
 
-        data_to_plot[0, :] = self.wofry_wavefront._electric_field_array.get_abscissas()
+        data_to_plot[0, :] = self.wofry_wavefront._electric_field_array.get_abscissas()/self.workspace_units_to_m
         data_to_plot[1, :] = numpy.abs(self.wofry_wavefront._electric_field_array.get_values())**2
 
         return wise_inner_source, data_to_plot
