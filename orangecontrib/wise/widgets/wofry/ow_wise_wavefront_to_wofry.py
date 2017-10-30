@@ -59,7 +59,7 @@ class OWWiseSourceToWofryWavefront1d(AutomaticWidget):
         self.controlArea.setFixedWidth(self.MAX_WIDTH-10)
         self.controlArea.setFixedHeight(self.MAX_HEIGHT-10)
 
-        main_box = oasysgui.widgetBox(self.controlArea, "WISE Wavefront to Wofry Wavefront Converter", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5, height=200)
+        main_box = oasysgui.widgetBox(self.controlArea, "WISE Wavefront to Wofry Wavefront Converter", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5, height=160)
 
         oasysgui.lineEdit(main_box, self, "area_size", "Area Size [" + u"\u03BC" + "m]", labelWidth=260, valueType=float, orientation="horizontal")
         oasysgui.lineEdit(main_box, self, "number_of_points", "Number of Points", labelWidth=260, valueType=int, orientation="horizontal")
