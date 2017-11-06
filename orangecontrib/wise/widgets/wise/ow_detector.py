@@ -47,6 +47,8 @@ class OWDetector(WiseWidget):
     _global_propagation_output = None
     _global_propagation_parameter = None
 
+    _defocus_sign = -1
+
     def set_input(self, input_data):
         self.setStatusMessage("")
 
@@ -243,7 +245,7 @@ class OWDetector(WiseWidget):
                                                           optical_element=self.input_data.get_optical_element().inner_wise_optical_element,
                                                           wavefront=self.input_data.get_wavefront(),
                                                           numerical_integration_parameters=numerical_integration_parameters,
-                                                          defocus_sweep=self.defocus_sweep * self.workspace_units_to_m)
+                                                          defocus_sweep=self._defocus_sign * self.defocus_sweep * self.workspace_units_to_m)
 
         propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
                                                                             WisePropagationAlgorithms.HuygensIntegral)
@@ -417,7 +419,7 @@ class OWDetector(WiseWidget):
                                     i*progress_bar_increment,
                                     tabs_canvas_index=1,
                                     plot_canvas_index=1,
-                                    title="Defocus Sweep: " + str(defocus/self.workspace_units_to_m) + " (" + str(i+1) + "/" + str(n_defocus) +
+                                    title="Defocus Sweep: " + str(self._defocus_sign * defocus/self.workspace_units_to_m) + " (" + str(i+1) + "/" + str(n_defocus) +
                                           "), HEW: " + str(round(propagation_output.HEW*1e6, 4)) + " [$\mu$m]",
                                     xtitle="Z [$\mu$m]",
                                     ytitle="Intensity",
@@ -444,7 +446,7 @@ class OWDetector(WiseWidget):
 
             QMessageBox.information(self,
                                     "Best Focus Calculation",
-                                    "Best Focus Found!\n\nPosition: " + str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) +
+                                    "Best Focus Found!\n\nPosition: " + str(self.oe_f2 + (self._defocus_sign * self.defocus_list[index_min]/self.workspace_units_to_m)) +
                                     "\nHEW: " + str(round(self.hews_list[index_min]*1e6, 4)) + " [" + u"\u03BC" + "m]",
                                     QMessageBox.Ok
                                     )
@@ -454,16 +456,16 @@ class OWDetector(WiseWidget):
                             100,
                             tabs_canvas_index=1,
                             plot_canvas_index=1,
-                            title="(BEST FOCUS) Defocus Sweep: " + str(self.defocus_list[index_min]/self.workspace_units_to_m) +
+                            title="(BEST FOCUS) Defocus Sweep: " + str(self._defocus_sign * self.defocus_list[index_min]/self.workspace_units_to_m) +
                                   " ("+ str(index_min+1) + "/" + str(n_defocus) + "), Position: " +
-                                  str(self.oe_f2 + (self.defocus_list[index_min]/self.workspace_units_to_m)) +
+                                  str(self.oe_f2 + (self._defocus_sign * self.defocus_list[index_min]/self.workspace_units_to_m)) +
                                   ", HEW: " + str(round(self.hews_list[index_min]*1e6, 4)) + " [$\mu$m]",
                             xtitle="Z [$\mu$m]",
                             ytitle="Intensity",
                             log_x=False,
                             log_y=False)
 
-            self.plot_histo(self.defocus_list,
+            self.plot_histo(self._defocus_sign * self.defocus_list,
                             numpy.multiply(self.hews_list, 1e6),
                             100,
                             tabs_canvas_index=2,
@@ -506,12 +508,12 @@ class OWDetector(WiseWidget):
             positions       = self.positions_list[index]
 
             if index == self.best_focus_index:
-                title = "(BEST FOCUS) Defocus Sweep: " + str(self.defocus_list[index]/self.workspace_units_to_m) + \
+                title = "(BEST FOCUS) Defocus Sweep: " + str(self._defocus_sign * self.defocus_list[index]/self.workspace_units_to_m) + \
                         " ("+ str(index+1) + "/" + str(n_defocus) + "), Position: " + \
                         str(self.oe_f2 + (self.defocus_list[index]/self.workspace_units_to_m)) + \
                         ", HEW: " + str(round(self.hews_list[index]*1e6, 4)) + " [$\mu$m]"
             else:
-                title = "Defocus Sweep: " + str(self.defocus_list[index]/self.workspace_units_to_m) + \
+                title = "Defocus Sweep: " + str(self._defocus_sign * self.defocus_list[index]/self.workspace_units_to_m) + \
                         " (" + str(index+1) + "/" + str(n_defocus) + "), HEW: " + str(round(self.hews_list[index]*1e6, 4)) + " [$\mu$m]"
 
             self.plot_histo(positions * 1e6,

@@ -42,6 +42,8 @@ class OWWiseSourceToWofryWavefront1d(AutomaticWidget):
     area_size = Setting(50.0)
     defocus_sweep = Setting(0.0)
 
+    _defocus_sign = -1
+
     def __init__(self):
         super().__init__()
 
@@ -97,7 +99,7 @@ class OWWiseSourceToWofryWavefront1d(AutomaticWidget):
                                                                   optical_element=self.input_data.get_optical_element().inner_wise_optical_element,
                                                                   wavefront=self.input_data.get_wavefront(),
                                                                   numerical_integration_parameters=numerical_integration_parameters,
-                                                                  defocus_sweep=self.defocus_sweep * self.workspace_units_to_m)
+                                                                  defocus_sweep=self._defocus_sign * self.defocus_sweep * self.workspace_units_to_m)
     
                 propagation_output = WisePropagatorsChain.Instance().do_propagation(propagation_parameter,
                                                                                     WisePropagationAlgorithms.HuygensIntegral)
