@@ -58,7 +58,6 @@ class OWWiseSourceToWofryWavefront1d(AutomaticWidget):
         self.controlArea.setFixedWidth(self.MAX_WIDTH-10)
         self.controlArea.setFixedHeight(self.MAX_HEIGHT-10)
 
-
         main_box = oasysgui.widgetBox(self.controlArea, "WISE Source to Wofry Wavefront Converter", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5, height=110)
 
         oasysgui.lineEdit(main_box, self, "number_of_points", "Number of Points", labelWidth=260, valueType=float, orientation="horizontal")
@@ -68,25 +67,22 @@ class OWWiseSourceToWofryWavefront1d(AutomaticWidget):
     def compute(self):
         if not self.source is None:
             try:
-                self.source = self.input_data.get_self.source().inner_wise_self.source
-
                 yy = numpy.linspace(-5*self.source.Waist0/numpy.sqrt(2) + self.source.ZOrigin,
                                     5*self.source.Waist0/numpy.sqrt(2) + self.source.ZOrigin,
-                                    self.number_of_points)
+                                    int(self.number_of_points))
 
-                electric_fields = self.source.EvalField_XYSelf(numpy.zeros(self.number_of_points),
-                                                          yy)
+                electric_fields = self.source.EvalField_XYSelf(x=numpy.zeros(int(self.number_of_points)), y=yy)
 
                 source_wavefront = WiseWavefront(wavelength=self.source.Lambda,
                                                  positions=yy/self.workspace_units_to_m,
                                                  electric_fields=electric_fields,
-                                                 residuals=numpy.zeros(self.number_of_points))
+                                                 residuals=numpy.zeros(int(self.number_of_points)))
 
                 self.send("GenericWavefront1D", source_wavefront.toGenericWavefront())
             except Exception as exception:
                 QMessageBox.critical(self, "Error", str(exception), QMessageBox.Ok)
 
-                #raise exception
+                raise exception
         
 
     def set_input(self, input_data):

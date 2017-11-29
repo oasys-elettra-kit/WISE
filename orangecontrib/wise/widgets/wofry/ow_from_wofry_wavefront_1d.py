@@ -31,11 +31,14 @@ class OWFromWofryWavefront1d(WiseWidget):
     transverse_correction = Setting(0.0)
     delta_theta = Setting(0.0)
 
+    reset_phase = Setting(1)
+    normalization_factor = Setting(1000)
+
     wofry_wavefront = None
 
     def build_gui(self):
 
-        main_box = oasysgui.widgetBox(self.controlArea, "Wofry Wavefront Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5, height=200)
+        main_box = oasysgui.widgetBox(self.controlArea, "Wofry Wavefront Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH-5, height=300)
 
         oasysgui.lineEdit(main_box, self, "source_lambda", "Wavelength [nm]", labelWidth=260, valueType=float, orientation="horizontal")
 
@@ -45,19 +48,25 @@ class OWFromWofryWavefront1d(WiseWidget):
                                             items=["User Defined", "Put Source at Mirror Focus"], labelWidth=260,
                                             callback=self.set_SourcePosition, sendSelectedValue=False, orientation="horizontal")
 
-        self.source_position_box_1 = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
-        self.source_position_box_2 = oasysgui.widgetBox(main_box, "", addSpace=True, orientation="vertical", height=70)
+        self.source_position_box_1 = oasysgui.widgetBox(main_box, "", addSpace=False, orientation="vertical", height=70)
+        self.source_position_box_2 = oasysgui.widgetBox(main_box, "", addSpace=False, orientation="vertical", height=70)
 
         self.le_z_origin = oasysgui.lineEdit(self.source_position_box_1, self, "z_origin", "Z Origin", labelWidth=260, valueType=float, orientation="horizontal")
         self.le_x_origin = oasysgui.lineEdit(self.source_position_box_1, self, "x_origin", "X Origin", labelWidth=260, valueType=float, orientation="horizontal")
         oasysgui.lineEdit(self.source_position_box_1, self, "theta", "Theta [deg]", labelWidth=260, valueType=float, orientation="horizontal")
-
 
         self.le_longitudinal_correction = oasysgui.lineEdit(self.source_position_box_2, self, "longitudinal_correction", "Longitudinal correction", labelWidth=260, valueType=float, orientation="horizontal")
         self.le_transverse_correction = oasysgui.lineEdit(self.source_position_box_2, self, "transverse_correction", "Transverse correction", labelWidth=260, valueType=float, orientation="horizontal")
         oasysgui.lineEdit(self.source_position_box_2, self, "delta_theta", "\u0394" + "Theta [deg]", labelWidth=260, valueType=float, orientation="horizontal")
 
         self.set_SourcePosition()
+
+        gui.separator(main_box, height=5)
+
+        gui.comboBox(main_box, self, "reset_phase", label="Reset Phase",
+                                            items=["No", "Yes"], labelWidth=300, sendSelectedValue=False, orientation="horizontal")
+
+        oasysgui.lineEdit(main_box, self, "normalization_factor", "Normalization Factor", labelWidth=260, valueType=float, orientation="horizontal")
 
     def set_SourcePosition(self):
         self.source_position_box_1.setVisible(self.source_position == 0)
@@ -89,6 +98,15 @@ class OWFromWofryWavefront1d(WiseWidget):
             self.z_origin = 0.0
             self.x_origin = 0.0
             self.theta    = 0.0
+
+        rinorm = numpy.sqrt(self.normalization_factor/numpy.max(self.wofry_wavefront.get_intensity()))
+
+        if self.reset_phase:
+            electric_fields = self.wofry_wavefront.get_amplitude()*rinorm + 0j
+        else:
+            electric_fields = self.wofry_wavefront.get_amplitude()*rinorm + self.wofry_wavefront.get_phase()
+
+        self.wofry_wavefront.set_complex_amplitude(electric_fields)
 
         wise_inner_source = WofryWavefrontSource_1d(wofry_wavefront=self.wofry_wavefront,
                                                     ZOrigin = self.z_origin * self.workspace_units_to_m,
@@ -130,7 +148,7 @@ class OWFromWofryWavefront1d(WiseWidget):
         self.setStatusMessage("")
 
         if not input_data is None:
-            self.wofry_wavefront = input_data
+            self.wofry_wavefront = input_data.duplicate()
             self.source_lambda = round(self.wofry_wavefront._wavelength*1e9, 4)
 
             if self.is_automatic_run: self.compute()
@@ -150,13 +168,31 @@ class WofryWavefrontSource_1d(object):
         self.YOrigin = YOrigin
         self.ThetaPropagation = Theta
 
+        parameters, covariance_matrix_pv = WofryWavefrontSource_1d.gaussian_fit(self.wofry_wavefront.get_intensity(), self.wofry_wavefront.get_abscissas())
+
+        self.Waist0 = parameters[3]
+
         self.units_converter = units_converter
 
     #================================================
     #     EvalField
     #================================================
     def EvalField_XYLab(self, x = numpy.array(None), y = numpy.array(None)):
+        wav_E = self.wofry_wavefront._electric_field_array.get_values()
+        wav_x = numpy.zeros(len(wav_E)) + self.ZOrigin
+        wav_y = self.wofry_wavefront._electric_field_array.get_abscissas()*self.units_converter + self.YOrigin
 
+        electric_fields = Rayman.HuygensIntegral_1d_MultiPool(self.Lambda,
+                                                              wav_E,
+                                                              wav_x,
+                                                              wav_y,
+                                                              x,
+                                                              y)
+        return electric_fields
+
+
+
+    def EvalField_XYSelf(self, x = numpy.array(None), y = numpy.array(None)):
         wav_E = self.wofry_wavefront._electric_field_array.get_values()
         wav_x = numpy.zeros(len(wav_E)) + self.ZOrigin
         wav_y = self.wofry_wavefront._electric_field_array.get_abscissas()*self.units_converter + self.YOrigin
@@ -169,3 +205,26 @@ class WofryWavefrontSource_1d(object):
                                                               y)
 
         return electric_fields
+
+
+    @classmethod
+    def gaussian_fit(cls, data_x, data_y):
+        from scipy import optimize, asarray
+
+        x = asarray(data_x)
+        y = asarray(data_y)
+        y_norm = y/sum(y)
+
+        mean = sum(x*y_norm)
+        sigma = numpy.sqrt(sum(y_norm*(x-mean)**2)/len(x))
+        amplitude = max(y)
+
+        parameters, covariance_matrix = optimize.curve_fit(WofryWavefrontSource_1d.gaussian_function, x, y, p0 = [amplitude, mean, sigma])
+        parameters.resize(4)
+        parameters[3] = 2.355*parameters[2]# FWHM
+
+        return parameters, covariance_matrix
+
+    @classmethod
+    def gaussian_function(cls, x, A, x0, sigma):
+        return A*numpy.exp(-(x-x0)**2/(2*sigma**2))
