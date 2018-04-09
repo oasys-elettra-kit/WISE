@@ -71,7 +71,7 @@ class OWWiseSourceToWofryWavefront1d(AutomaticWidget):
                                     5*self.source.Waist0/numpy.sqrt(2) + self.source.ZOrigin,
                                     int(self.number_of_points))
 
-                electric_fields = self.source.EvalField_XYSelf(x=numpy.zeros(int(self.number_of_points)), y=yy)
+                electric_fields = self.source.EvalField_XYSelf(z=numpy.zeros(int(self.number_of_points)), y=yy)
 
                 source_wavefront = WiseWavefront(wavelength=self.source.Lambda,
                                                  positions=yy/self.workspace_units_to_m,
