@@ -9,7 +9,7 @@ except AttributeError:
 
 
 NAME = 'OASYS1-WISE'
-VERSION = '1.1.6'
+VERSION = '1.1.7'
 ISRELEASED = True
 
 DESCRIPTION = 'WISE in Python'
@@ -17,8 +17,8 @@ README_FILE = os.path.join(os.path.dirname(__file__), 'README.txt')
 LONG_DESCRIPTION = open(README_FILE).read()
 AUTHOR = 'Michele Manfredda, Lorenzo Raimondi, Luca Rebuffi'
 AUTHOR_EMAIL = 'luca.rebuffi@elettra.eu'
-URL = 'https://github.com/lucarebuffi/WISE'
-DOWNLOAD_URL = 'https://github.com/lucarebuffi/WISE'
+URL = 'https://github.com/oasys-elettra-kit/WISE'
+DOWNLOAD_URL = 'https://github.com/oasys-elettra-kit/WISE'
 LICENSE = 'GPLv3'
 
 KEYWORDS = (
